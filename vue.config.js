@@ -37,11 +37,12 @@ module.exports = {
       errors: true
     },
     // before: require('./mock/mock-server.js'),
-    https: false,
+    https: true,
     proxy: {
       [process.env.VUE_APP_BASE_API]: {
         target: process.env.VUE_APP_SERVICE_URL,
         changeOrigin: true,
+        logLevel: 'debug',
         pathRewrite: {
           ['^' + process.env.VUE_APP_BASE_API]: ''
         }
