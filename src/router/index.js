@@ -82,8 +82,14 @@ export const constantRoutes = [
     component: Layout,
     redirect: '/goods',
     name: 'Goods',
-    meta: { title: '商品管理', icon: 'nested' },
+    meta: { title: '产品', icon: 'nested' },
     children: [
+      {
+        path: 'goods',
+        name: 'all_goods',
+        component: () => import('@/views/goods/all/index'),
+        meta: { title: '商品管理', icon: 'el-icon-notebook-1' }
+      },
       {
         path: 'standard',
         name: 'standard_goods',
