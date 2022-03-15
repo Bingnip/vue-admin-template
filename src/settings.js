@@ -1,6 +1,6 @@
 module.exports = {
 
-  title: 'netfyling-sale',
+  title: 'Netfyling-Sale',
 
   /**
    * @type {boolean} true | false
