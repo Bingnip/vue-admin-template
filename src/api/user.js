@@ -2,7 +2,7 @@ import request from '@/utils/request'
 
 export function login(data) {
   return request({
-    url: '/api/record_ip.php',
+    url: '/vue_admin/goods.php',
     method: 'post',
     data
   })
