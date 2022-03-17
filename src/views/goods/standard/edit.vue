@@ -42,36 +42,39 @@
               <el-col :span="12"><el-button type="danger" size="small">301重定向设置</el-button></el-col>
             </el-form-item>
             <el-form-item label="状态：" prop="g_status">
-              <el-radio-group v-model="ruleForm.g_status">
-                <el-radio label="上架中" />
-                <el-radio label="已下架" />
-              </el-radio-group>
+              <el-radio v-model="ruleForm.g_status" label="1">上架中</el-radio>
+              <el-radio v-model="ruleForm.g_status" label="0">已下架</el-radio>
             </el-form-item>
             <el-form-item label="置顶号：" prop="g_order">
-              <el-col :span="12">
-                <el-input v-model="ruleForm.g_order" />
+              <el-col :span="4">
+                <el-input v-model="ruleForm.g_order" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
               </el-col>
-              <el-col :span="12">（越大越靠前)</el-col>
+              <el-col :span="10">（越大越靠前)</el-col>
             </el-form-item>
-            <el-form-item label="销售标识：" prop="g_recommended" />
+            <el-form-item label="销售标识：" prop="g_recommended">
+              <el-checkbox v-model="ruleForm.g_recommended">推荐</el-checkbox>
+              <el-checkbox v-model="ruleForm.g_new">新品</el-checkbox>
+              <el-checkbox v-model="ruleForm.g_hot">热门</el-checkbox>
+              <el-checkbox v-model="ruleForm.is_special_offer">特价</el-checkbox>
+            </el-form-item>
             <el-form-item label="促销倒计时：" prop="g_discount_rate">
               <el-col :span="3">
-                <el-radio-group v-model="ruleForm.g_discount_rate">
-                  <el-radio label="开启" />
-                  <el-radio label="关闭" />
-                </el-radio-group>
+                <el-radio v-model="ruleForm.g_discount_rate" label="0">关闭</el-radio>
+                <el-radio v-model="ruleForm.g_discount_rate" label="1">开启</el-radio>
               </el-col>
-              <el-col :span="6">
-                <el-form-item prop="g_discount_start_time">
-                  <el-date-picker v-model="ruleForm.g_discount_start_time" type="datetime" placeholder="开始日期" style="width: 100%;" />
-                </el-form-item>
-              </el-col>
-              <el-col class="line" :span="1">~</el-col>
-              <el-col :span="6">
-                <el-form-item prop="g_discount_end_time">
-                  <el-date-picker v-model="ruleForm.g_discount_end_time" type="datetime" placeholder="结束时间" style="width: 100%;" />
-                </el-form-item>
-              </el-col>
+              <div v-if="ruleForm.g_discount_rate == '1'">
+                <el-col :span="5">
+                  <el-form-item prop="g_discount_start_time">
+                    <el-date-picker v-model="ruleForm.g_discount_start_time" type="datetime" placeholder="开始日期" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+                <el-col class="line" :span="1" :offset="1">~</el-col>
+                <el-col :span="5">
+                  <el-form-item prop="g_discount_end_time">
+                    <el-date-picker v-model="ruleForm.g_discount_end_time" type="datetime" placeholder="结束时间" style="width: 100%;" />
+                  </el-form-item>
+                </el-col>
+              </div>
             </el-form-item>
             <el-form-item label="添加时间：" prop="g_add_time">
               <el-col :span="6">
@@ -115,11 +118,11 @@
                   <el-col :span="2">
                     <el-form-item label="规格名：" />
                   </el-col>
-                  <el-col :span="10"><el-input :value="item.header.specifyKey" /></el-col>
+                  <el-col :span="10"><el-input :value="item.specifyValue" /></el-col>
                   <el-col :span="2">
                     <el-form-item label="排序：" />
                   </el-col>
-                  <el-col :span="2"><el-input :value="item.header.order" /></el-col>
+                  <el-col :span="2"><el-input :value="item.order" /></el-col>
                   <el-col :span="6">
                     <el-form-item>
                       <el-checkbox>添加规格图片</el-checkbox>
@@ -143,7 +146,7 @@
                       </el-col>
                       <el-col :span="3" />
                     </el-row>
-                    <el-row v-for="(row) in item.body" :key="row.id" :gutter="24">
+                    <el-row v-for="(row) in item.children" :key="row.id" :gutter="24">
                       <el-col :span="9" :offset="1"><el-input :value="row.specifyValue" /></el-col>
                       <el-col :span="3" :offset="1"><el-input :value="row.order" /></el-col>
                       <el-col :span="5"><img :src="row.img" alt="" width="120" height="120"></el-col>
@@ -166,10 +169,39 @@
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-table :data="tableData" :span-method="objectSpanMethod" border style="width: 80%; margin: 20px 0 0 30px;">
-              <el-table-column prop="id" label="ID" width="180" />
-              <el-table-column prop="name" label="姓名" />
+            <el-table :data="priceStockList" :span-method="objectSpanMethod" border style="width: 80%; margin: 20px 0 0 30px;">
+              <el-table-column prop="p1" width="180" />
+              <el-table-column prop="p2" />
+              <el-table-column prop="p3" />
+              <el-table-column prop="price" label="价格" />
+              <el-table-column prop="stock" label="库存" />
             </el-table>
+            <br>
+            <el-row>
+              <el-col :span="1">
+                <el-form-item label="划线价：" />
+              </el-col>
+              <el-col :span="4">
+                <el-form-item>
+                  <el-input />
+                </el-form-item>
+              </el-col>
+              <el-col :span="19">
+                <el-form-item>
+                  （未编辑则前端不显示划线价及折扣比例）
+                </el-form-item>
+              </el-col>
+            </el-row>
+            <el-row>
+              <el-col :span="1">
+                <el-form-item label="库存总计：" />
+              </el-col>
+              <el-col :span="23">
+                <el-form-item>
+                  <span>2222</span>
+                </el-form-item>
+              </el-col>
+            </el-row>
           </el-tab-pane>
 
           <el-tab-pane label="分类选择">
@@ -230,63 +262,39 @@ import { getCategoryList } from '@/api/goods/standard'
 export default {
   data() {
     return {
-      tableData: [{
-        id: '12987122',
-        name: '王小虎',
-        amount1: '234',
-        amount2: '3.2',
-        amount3: 10
-      }, {
-        id: '12987123',
-        name: '王小虎',
-        amount1: '165',
-        amount2: '4.43',
-        amount3: 12
-      }, {
-        id: '12987124',
-        name: '王小虎',
-        amount1: '324',
-        amount2: '1.9',
-        amount3: 9
-      }, {
-        id: '12987125',
-        name: '王小虎',
-        amount1: '621',
-        amount2: '2.2',
-        amount3: 17
-      }, {
-        id: '12987126',
-        name: '王小虎',
-        amount1: '539',
-        amount2: '4.1',
-        amount3: 15
-      }],
+      priceStockList: [],
       specifyList: [{
         id: 100,
-        header: { specifyKey: '规格1', order: 1, imgOpen: 1 },
+        specifyValue: '规格1',
+        order: 23,
+        imgOpen: 1,
         deleted: 0,
-        body: [
+        children: [
           { id: 1001, specifyValue: '规格1-1', order: 1, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297507_4.jpg', default: 1, deleted: 0, price: 0, stock: 1 },
           { id: 1002, specifyValue: '规格1-2', order: 2, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 10, stock: 5 },
-          { id: 1003, specifyValue: '规格1-2', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 20, stock: 6 }
+          { id: 1003, specifyValue: '规格1-3', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 20, stock: 6 }
         ]
       }, {
         id: 200,
-        header: { specifyKey: '规格2', order: 2, imgOpen: 0 },
+        specifyValue: '规格2',
+        order: 2,
+        imgOpen: 0,
         deleted: 0,
-        body: [
+        children: [
           { id: 2001, specifyValue: '规格2-1', order: 1, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297507_4.jpg', default: 1, deleted: 0, price: 0, stock: 1 },
           { id: 2002, specifyValue: '规格2-2', order: 2, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 0.66, stock: 4 },
-          { id: 2003, specifyValue: '规格2-2', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 7.36, stock: 5 }
+          { id: 2003, specifyValue: '规格2-3', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 7.36, stock: 5 }
         ]
       }, {
         id: 300,
-        header: { specifyKey: '规格3', order: 3, imgOpen: 1 },
+        specifyValue: '规格3',
+        order: 3,
+        imgOpen: 1,
         deleted: 0,
-        body: [
+        children: [
           { id: 3001, specifyValue: '规格3-1', order: 1, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297507_4.jpg', default: 1, deleted: 0, price: 0, stock: 1 },
           { id: 3002, specifyValue: '规格3-2', order: 2, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 30, stock: 55 },
-          { id: 3003, specifyValue: '规格3-2', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 50, stock: 662 }
+          { id: 3003, specifyValue: '规格3-3', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 50, stock: 662 }
         ]
       }],
       gidRefList: [
@@ -307,20 +315,81 @@ export default {
       ruleForm: {
         g_sku: '',
         g_name: '',
-        g_alias: ''
-
+        g_alias: '',
+        g_weight: '',
+        g_status: '0',
+        g_order: 0,
+        g_recommended: false,
+        g_new: false,
+        g_hot: false,
+        is_special_offer: false,
+        g_discount_rate: '0'
       },
       rules: {
+        g_sku: [
+          { required: true, message: '请输入SKU', trigger: 'blur' }
+        ],
         g_name: [
           { required: true, message: '请输入商品名称', trigger: 'blur' }
+        ],
+        g_alias: [
+          { required: true, message: '请输入URL KEY', trigger: 'blur' }
         ]
       }
     }
   },
   created() {
     this.fetchData()
+    if (this.specifyList) {
+      this.fetchPriceStockData(this.specifyList)
+    }
   },
   methods: {
+    fetchPriceStockData(list, index = 0) {
+      if (list.length === index) {
+        return
+      }
+
+      const children = list[index]['children']
+      var iterator = []
+
+      if (children) {
+        if (this.priceStockList.length == 0) {
+          children.forEach(e => {
+            var idx = 'p' + (index + 1)
+            var temp = {}
+            temp[idx] = e.specifyValue
+            temp['price'] = e.price
+            temp['stock'] = e.stock
+
+            iterator.push(temp)
+          })
+        } else {
+          this.priceStockList.forEach(e => {
+            children.forEach(ele => {
+              // todo 这里优化下
+              var idx = 'p' + (index + 1)
+              var prevIdx = 'p' + index
+              var parentIdx = 'p' + (index - 1)
+
+              var temp = {}
+              temp[parentIdx] = e[parentIdx]
+              temp[prevIdx] = e[prevIdx]
+              temp[idx] = ele.specifyValue
+              temp['price'] = e.price
+              temp['stock'] = e.stock
+
+              iterator.push(temp)
+            })
+          })
+        }
+
+        this.priceStockList = iterator
+      }
+
+      index++
+      this.fetchPriceStockData(list, index)
+    },
     fetchData() {
       getCategoryList().then(response => {
         this.categoryList = response.data.items
@@ -334,18 +403,25 @@ export default {
       this.dialogVisible = true
     },
     objectSpanMethod({ row, column, rowIndex, columnIndex }) {
-      if (columnIndex === 0) {
-        if (rowIndex % 2 === 0) {
-          return {
-            rowspan: 2,
-            colspan: 1
-          }
-        } else {
-          return {
-            rowspan: 0,
-            colspan: 0
-          }
-        }
+      // if (columnIndex === 0) {
+      //   if (rowIndex % 2 === 0) {
+      //     return {
+      //       rowspan: 2,
+      //       colspan: 1
+      //     }
+      //   } else {
+      //     return {
+      //       rowspan: 0,
+      //       colspan: 0
+      //     }
+      //   }
+      // }
+    },
+    prevent(e) {
+      var keynum = window.event ? e.keyCode : e.which // 获取键盘码
+      if (keynum == 189 || keynum == 190 || keynum == 109 || keynum == 110) {
+        this.$message.warning('禁止输入小数以及负数')
+        e.target.value = ''
       }
     }
   }
