@@ -1,13 +1,15 @@
 <template>
   <div class="app-container">
     <el-container>
-      <el-header>Header</el-header>
+      <el-header>
+        <el-button type="primary">新增</el-button>
+      </el-header>
       <el-main>
         <el-table
           v-loading="listLoading"
           :data="list"
           element-loading-text="Loading"
-          height="820"
+          height="780"
           border
           fit
           highlight-current-row
@@ -43,22 +45,36 @@
             </template>
           </el-table-column>
           <el-table-column label="置顶号" width="90" align="center">
-            <template />
+            <template slot-scope="scope">
+              {{ scope.row.g_order }}
+            </template>
           </el-table-column>
           <el-table-column label="状态" width="90" align="center">
-            <template />
+            <template slot-scope="scope">
+              <span v-if="scope.row.g_status == 1" style="color:#67C23A;">上架中</span>
+              <span v-else style="color:#F56C6C;">已下架</span>
+            </template>
           </el-table-column>
           <el-table-column label="促销倒计时" width="90" align="center">
             <template />
           </el-table-column>
           <el-table-column label="推荐" width="90" align="center">
-            <template />
+            <template slot-scope="scope">
+              <span v-if="scope.row.g_recommended == 1">是</span>
+              <span v-else>否</span>
+            </template>
           </el-table-column>
           <el-table-column label="新品" width="90" align="center">
-            <template />
+            <template slot-scope="scope">
+              <span v-if="scope.row.g_new == 1">是</span>
+              <span v-else>否</span>
+            </template>
           </el-table-column>
           <el-table-column label="热门" width="90" align="center">
-            <template />
+            <template slot-scope="scope">
+              <span v-if="scope.row.g_hot == 1">是</span>
+              <span v-else>否</span>
+            </template>
           </el-table-column>
           <el-table-column label="浏览数" width="90" align="center">
             <template />
@@ -70,13 +86,20 @@
             <template />
           </el-table-column>
           <el-table-column label="修改时间" width="120" align="center">
-            <template />
+            <template slot-scope="{row}">
+              <span>{{ row.g_last_time | parseTime('{y}-{m}-{d}') }}</span>
+            </template>
           </el-table-column>
           <el-table-column label="创建时间" width="120" align="center">
-            <template />
+            <template slot-scope="{row}">
+              <span>{{ row.g_add_time | parseTime('{y}-{m}-{d}') }}</span>
+            </template>
           </el-table-column>
           <el-table-column fixed="right" label="操作" width="120" align="center">
-            <template />
+            <el-button size="mini" type="primary" plain>编辑</el-button>
+            <el-button size="mini" type="warning" plain>复制</el-button>
+            <el-button size="mini" type="danger" plain>删除</el-button>
+            <el-button size="mini" type="info" plain>日志</el-button>
           </el-table-column>
         </el-table>
       </el-main>
@@ -86,8 +109,13 @@
 
 <script>
 import { getList } from '@/api/goods/standard'
+import { parseTime } from '@/utils'
 
 export default {
+  name: 'StandardGoods',
+  filters: {
+    parseTime: parseTime
+  },
   data() {
     return {
       list: null,
@@ -110,10 +138,5 @@ export default {
 </script>
 
 <style scoped>
-  .el-header, .el-footer {
-    background-color: #B3C0D1;
-    color: #333;
-    text-align: center;
-    line-height: 60px;
-  }
+
 </style>

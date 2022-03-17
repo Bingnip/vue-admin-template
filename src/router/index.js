@@ -85,19 +85,25 @@ export const constantRoutes = [
     meta: { title: '产品', icon: 'nested' },
     children: [
       {
-        path: 'goods',
+        path: 'standard_goods_edit',
+        name: 'standard_goods_edit',
+        component: () => import('@/views/goods/standard/edit'),
+        meta: { title: '新增标品', icon: 'el-icon-notebook-2' }
+      },
+      {
+        path: 'all_goods',
         name: 'all_goods',
         component: () => import('@/views/goods/all/index'),
         meta: { title: '商品管理', icon: 'el-icon-notebook-1' }
       },
       {
-        path: 'standard',
+        path: 'standard_goods',
         name: 'standard_goods',
         component: () => import('@/views/goods/standard/index'),
         meta: { title: '标品', icon: 'el-icon-notebook-1' }
       },
       {
-        path: 'custom',
+        path: 'custom_goods',
         name: 'custom_goods',
         component: () => import('@/views/goods/custom/index'),
         meta: { title: '定制品', icon: 'el-icon-notebook-2' }
