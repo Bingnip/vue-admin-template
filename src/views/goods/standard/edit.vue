@@ -87,7 +87,11 @@
           </el-tab-pane>
 
           <el-tab-pane label="商品图片">
-            <span>ddd</span>
+            <el-form-item label="上传图片：" prop="imgList">
+              <el-col :span="16">
+                <ImgUpload v-model="ruleForm.imgList" />
+              </el-col>
+            </el-form-item>
           </el-tab-pane>
 
           <el-tab-pane label="商品规格">
@@ -241,9 +245,10 @@
 <script>
 import { getCategoryList } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
+import ImgUpload from '@/components/ImgUpload'
 
 export default {
-  components: { Tinymce },
+  components: { Tinymce, ImgUpload },
   data() {
     return {
       options: [{
@@ -263,7 +268,10 @@ export default {
         label: '北京烤鸭'
       }],
       value: '',
-
+      type: 'add', // add添加，edit编辑
+      formData: {
+        imgList: [] // vue2.x里需要提前定义好字段初始值，以便支持数据响应式
+      },
       priceStockList: [],
       specifyList: [{
         id: 100,
@@ -322,6 +330,7 @@ export default {
         g_hot: false,
         is_special_offer: false,
         g_discount_rate: '0',
+        imgList: [],
         g_desc: 'test g_desc',
         g_meta_title: '',
         g_meta_keywords: ''
@@ -343,6 +352,11 @@ export default {
     this.fetchData()
     if (this.specifyList) {
       this.fetchPriceStockData(this.specifyList)
+    }
+
+    this.type = this.$route.query.type || 'add'
+    if (this.type === 'edit') {
+      this.getDetail()
     }
   },
   methods: {
@@ -417,6 +431,14 @@ export default {
         this.$message.warning('禁止输入小数以及负数')
         e.target.value = ''
       }
+    },
+    getDetail() {
+      setTimeout(() => {
+        const res = {
+          imgList: ['https://abc.png']
+        }
+        this.formData = res
+      }, 1000)
     }
   }
 }
