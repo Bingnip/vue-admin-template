@@ -88,7 +88,7 @@
 
           <el-tab-pane label="商品图片">
             <el-form-item label="上传图片：" prop="imgList">
-              <el-col :span="16">
+              <el-col :span="20">
                 <ImgUpload v-model="ruleForm.imgList" />
               </el-col>
             </el-form-item>

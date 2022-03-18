@@ -25,7 +25,12 @@
       >
         <el-image :src="item" :preview-src-list="[item]" />
         <div class="shadow" @click="onRemoveHandler(index)">
-          <i class="el-icon-delete" />
+          <i class="el-icon-delete" :name="index" />
+        </div>
+        <div v-if="index == 0 || index == 1 || index == 2" class="tips">
+          <span v-if="index == 0">橱窗图</span>
+          <span v-else-if="index == 1">Hover图</span>
+          <span v-else-if="index == 2">商品主图</span>
         </div>
       </li>
       <!-- 上传按钮 -->
@@ -36,7 +41,7 @@
         :style="{ width: width + 'px', height: height + 'px' }"
         action="https://httpbin.org/post"
         :headers="headers"
-        accept=".jpg,.jpeg,.png,.gif"
+        accept=".jpg,.jpeg,.png"
         :show-file-list="false"
         :multiple="!isSingle"
         :limit="limit"
@@ -80,7 +85,7 @@ export default {
     // 限制上传图片的文件大小(kb)
     size: {
       type: Number,
-      default: 500
+      default: 1024
     },
     // 是否是单图上传(单图上传就是已传图片和上传按钮重叠)
     isSingle: {
@@ -95,12 +100,12 @@ export default {
     // 图片显示的宽度(px)
     width: {
       type: Number,
-      default: 100
+      default: 150
     },
     // 图片显示的高度(px)
     height: {
       type: Number,
-      default: 100
+      default: 150
     }
   },
 
@@ -108,7 +113,8 @@ export default {
     return {
       headers: {},
       isUploading: false, // 正在上传状态
-      isFirstMount: true // 控制防止重复回显
+      isFirstMount: true, // 控制防止重复回显
+      uploadUrl: '/goods.php?action=imgUpload'
     }
   },
 
@@ -294,6 +300,17 @@ export default {
       font-size: 20px;
       line-height: 20px;
       padding: 2px;
+      cursor: pointer;
+    }
+    .tips {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      background-color: rgba(0, 0, 255, 1);
+      color: #fff;
+      font-size: 12px;
+      line-height: 20px;
+      padding: 1px 6px;
       cursor: pointer;
     }
     &:hover {
