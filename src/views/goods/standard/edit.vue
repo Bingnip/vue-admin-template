@@ -87,33 +87,13 @@
           </el-tab-pane>
 
           <el-tab-pane label="商品图片">
-            <el-form-item label="橱窗图：" prop="g_img" />
-            <el-form-item label="Hover图：" prop="g_img_hover" />
-            <el-form-item label="其他图：" prop="g_img_else">
-              <el-upload :action="uploadUrl" :auto-upload="true" list-type="picture-card" :multiple="true">
-                <i slot="default" class="el-icon-plus" />
-                <div slot="file" slot-scope="{file}">
-                  <img class="el-upload-list__item-thumbnail" :src="file.url" alt="">
-                  <span class="el-upload-list__item-actions">
-                    <span class="el-upload-list__item-preview" @click="handlePictureCardPreview(file)">
-                      <i class="el-icon-zoom-in" />
-                    </span>
-                    <span v-if="!disabled" class="el-upload-list__item-delete" @click="handleRemove(file)">
-                      <i class="el-icon-delete" />
-                    </span>
-                  </span>
-                </div>
-              </el-upload>
-              <el-dialog :visible.sync="dialogVisible">
-                <img width="100%" :src="dialogImageUrl" alt="">
-              </el-dialog>
-            </el-form-item>
+            <span>ddd</span>
           </el-tab-pane>
 
           <el-tab-pane label="商品规格">
             <el-header><el-button type="primary" size="mini">添加规格项目</el-button></el-header>
             <el-main>
-              <table v-for="(item) in specifyList" :key="item.id" style="width: 80%; margin: 15px; padding: 20px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1)">
+              <table v-for="(item) in specifyList" :key="item.id" style="width: 80%; margin: 15px; padding: 20px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);border-radius: 4px;">
                 <el-row :gutter="24">
                   <el-col :span="2">
                     <el-form-item label="规格名：" />
@@ -169,7 +149,7 @@
                 </el-form-item>
               </el-col>
             </el-row>
-            <el-table :data="priceStockList" :span-method="objectSpanMethod" border style="width: 80%; margin: 20px 0 0 30px;">
+            <el-table :data="priceStockList" :span-method="objectSpanMethod" border style="width: 80%; margin: 0 0 0 30px;">
               <el-table-column prop="p1" width="180" />
               <el-table-column prop="p2" />
               <el-table-column prop="p3" />
@@ -209,10 +189,12 @@
           </el-tab-pane>
 
           <el-tab-pane label="内容信息">
-            <el-form-item label="描述">
-              <el-input v-model="ruleForm.g_desc" type="textarea" prop="g_desc" />
+            <el-form-item label="描述：">
+              <el-col :span="20">
+                <tinymce v-model="ruleForm.g_desc" :height="300" />
+              </el-col>
             </el-form-item>
-            <el-form-item label="META标题">
+            <el-form-item label="META标题：">
               <el-col :span="12">
                 <el-input v-model="ruleForm.g_meta_title" type="textarea" prop="g_meta_title" />
               </el-col>
@@ -220,7 +202,7 @@
                 <el-button type="primary" size="small">填充商品名称</el-button>
               </el-col>
             </el-form-item>
-            <el-form-item label="META关键词">
+            <el-form-item label="META关键词：">
               <el-col :span="12">
                 <el-input v-model="ruleForm.g_meta_keywords" type="textarea" prop="g_meta_keywords" />
               </el-col>
@@ -258,10 +240,30 @@
 
 <script>
 import { getCategoryList } from '@/api/goods/standard'
+import Tinymce from '@/components/Tinymce'
 
 export default {
+  components: { Tinymce },
   data() {
     return {
+      options: [{
+        value: '选项1',
+        label: '黄金糕'
+      }, {
+        value: '选项2',
+        label: '双皮奶'
+      }, {
+        value: '选项3',
+        label: '蚵仔煎'
+      }, {
+        value: '选项4',
+        label: '龙须面'
+      }, {
+        value: '选项5',
+        label: '北京烤鸭'
+      }],
+      value: '',
+
       priceStockList: [],
       specifyList: [{
         id: 100,
@@ -308,10 +310,6 @@ export default {
       },
       labelPosition: 'right',
       tabPosition: 'left',
-      dialogImageUrl: '',
-      dialogVisible: false,
-      disabled: false,
-      uploadUrl: '/vue_admin/goods.php?action=uploadImg',
       ruleForm: {
         g_sku: '',
         g_name: '',
@@ -323,7 +321,10 @@ export default {
         g_new: false,
         g_hot: false,
         is_special_offer: false,
-        g_discount_rate: '0'
+        g_discount_rate: '0',
+        g_desc: 'test g_desc',
+        g_meta_title: '',
+        g_meta_keywords: ''
       },
       rules: {
         g_sku: [
@@ -394,13 +395,6 @@ export default {
       getCategoryList().then(response => {
         this.categoryList = response.data.items
       })
-    },
-    handleRemove(file) {
-      console.log(file)
-    },
-    handlePictureCardPreview(file) {
-      this.dialogImageUrl = file.url
-      this.dialogVisible = true
     },
     objectSpanMethod({ row, column, rowIndex, columnIndex }) {
       // if (columnIndex === 0) {
