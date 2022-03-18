@@ -2,7 +2,10 @@
   <el-container>
     <el-header>
       <el-row :gutter="20">
-        <el-col :span="6"><h2>编辑商品</h2></el-col>
+        <el-col :span="6">
+          <h2 v-if="editType == 'create'">新增商品</h2>
+          <h2 v-else>编辑商品</h2>
+        </el-col>
         <el-col :span="6" :offset="12"><el-button type="primary">保存</el-button></el-col>
       </el-row>
     </el-header>
@@ -95,25 +98,28 @@
           </el-tab-pane>
 
           <el-tab-pane label="商品规格">
-            <el-header><el-button type="primary" size="mini">添加规格项目</el-button></el-header>
+            <el-header><el-button type="primary" size="mini" @click="addSpecify()">添加规格项目</el-button></el-header>
             <el-main>
-              <table v-for="(item) in specifyList" :key="item.id" style="width: 80%; margin: 15px; padding: 20px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);border-radius: 4px;">
+              <table v-for="(item, index) in specifyList" :key="item.id" style="width: 80%; margin: 15px; padding: 20px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);border-radius: 4px;">
                 <el-row :gutter="24">
                   <el-col :span="2">
                     <el-form-item label="规格名：" />
                   </el-col>
-                  <el-col :span="10"><el-input :value="item.specifyValue" /></el-col>
+                  <el-col :span="8"><el-input :value="item.specifyValue" /></el-col>
                   <el-col :span="2">
                     <el-form-item label="排序：" />
                   </el-col>
                   <el-col :span="2"><el-input :value="item.order" /></el-col>
-                  <el-col :span="6">
+                  <el-col :span="8">
                     <el-form-item>
-                      <el-checkbox>添加规格图片</el-checkbox>
+                      <el-checkbox :checked="item.imgOpen" @change="addSpecifyImg(index)">添加规格图片</el-checkbox>
                     </el-form-item>
                   </el-col>
+                  <el-col :span="2">
+                    <i class="el-icon-error" style="font-size: 35px;" @click="removeSpecify(index)" />
+                  </el-col>
                 </el-row>
-                <tr>
+                <el-row>
                   <table>
                     <el-row :gutter="24">
                       <el-col :span="10">
@@ -122,7 +128,7 @@
                       <el-col :span="3">
                         <el-form-item label="排序" />
                       </el-col>
-                      <el-col :span="5">
+                      <el-col v-if="item.imgOpen == true" :span="5">
                         <el-form-item label="图片" />
                       </el-col>
                       <el-col :span="3">
@@ -130,15 +136,28 @@
                       </el-col>
                       <el-col :span="3" />
                     </el-row>
-                    <el-row v-for="(row) in item.children" :key="row.id" :gutter="24">
+                    <el-row v-for="(row, rowIndex) in item.children" :key="row.id" :gutter="24">
                       <el-col :span="9" :offset="1"><el-input :value="row.specifyValue" /></el-col>
                       <el-col :span="3" :offset="1"><el-input :value="row.order" /></el-col>
-                      <el-col :span="5"><img :src="row.img" alt="" width="120" height="120"></el-col>
-                      <el-col :span="2" :offset="1"><el-radio v-model="row.default" /></el-col>
-                      <el-col :span="2"><el-button type="danger" size="mini">删除</el-button></el-col>
+                      <el-col v-if="item.imgOpen == true" :span="5">
+                        <el-upload class="avatar-uploader" action="/goods.php?action=imgUpload" :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
+                          <img v-if="row.img" :src="row.img" class="avatar">
+                          <i v-else class="el-icon-plus avatar-uploader-icon" />
+                        </el-upload>
+                      </el-col>
+                      <el-col :span="2" :offset="1">
+                        <input type="radio" :name="item.id" :checked="row.default" @click="specifyValueCheck(index, rowIndex)">
+                      </el-col>
+                      <el-col :span="2"><el-button type="danger" size="mini" @click="removeSpecifyValue(index, rowIndex)">删除</el-button></el-col>
                     </el-row>
                   </table>
-                </tr>
+                </el-row>
+                <el-row>
+                  <el-col :span="3" :offset="1">
+                    <span class="addSpecify" @click="addSpecifyValue(index)">+ 添加规则值</span>
+                  </el-col>
+                  <el-col :span="20" />
+                </el-row>
               </table>
             </el-main>
           </el-tab-pane>
@@ -216,7 +235,7 @@
             </el-form-item>
           </el-tab-pane>
 
-          <el-tab-pane label="关联商品">
+          <el-tab-pane v-if="editType == 'edit'" label="关联商品">
             <el-form-item label="商品ID">
               <el-col :span="12">
                 <el-input placeholder="输入ID, 多个已英文逗号(,)隔开" />
@@ -251,33 +270,14 @@ export default {
   components: { Tinymce, ImgUpload },
   data() {
     return {
-      options: [{
-        value: '选项1',
-        label: '黄金糕'
-      }, {
-        value: '选项2',
-        label: '双皮奶'
-      }, {
-        value: '选项3',
-        label: '蚵仔煎'
-      }, {
-        value: '选项4',
-        label: '龙须面'
-      }, {
-        value: '选项5',
-        label: '北京烤鸭'
-      }],
-      value: '',
-      type: 'add', // add添加，edit编辑
-      formData: {
-        imgList: [] // vue2.x里需要提前定义好字段初始值，以便支持数据响应式
-      },
+      editType: 'create',
+      type: 'add', // 图片上传的类型
       priceStockList: [],
       specifyList: [{
         id: 100,
         specifyValue: '规格1',
         order: 23,
-        imgOpen: 1,
+        imgOpen: true,
         deleted: 0,
         children: [
           { id: 1001, specifyValue: '规格1-1', order: 1, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297507_4.jpg', default: 1, deleted: 0, price: 0, stock: 1 },
@@ -288,29 +288,26 @@ export default {
         id: 200,
         specifyValue: '规格2',
         order: 2,
-        imgOpen: 0,
+        imgOpen: false,
         deleted: 0,
         children: [
-          { id: 2001, specifyValue: '规格2-1', order: 1, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297507_4.jpg', default: 1, deleted: 0, price: 0, stock: 1 },
-          { id: 2002, specifyValue: '规格2-2', order: 2, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 0.66, stock: 4 },
-          { id: 2003, specifyValue: '规格2-3', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 7.36, stock: 5 }
+          { id: 2001, specifyValue: '规格2-1', order: 1, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297507_4.jpg', default: true, deleted: 0, price: 0, stock: 1 },
+          { id: 2002, specifyValue: '规格2-2', order: 2, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: false, deleted: 0, price: 0.66, stock: 4 },
+          { id: 2003, specifyValue: '规格2-3', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: false, deleted: 0, price: 7.36, stock: 5 }
         ]
       }, {
         id: 300,
         specifyValue: '规格3',
         order: 3,
-        imgOpen: 1,
+        imgOpen: false,
         deleted: 0,
         children: [
-          { id: 3001, specifyValue: '规格3-1', order: 1, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297507_4.jpg', default: 1, deleted: 0, price: 0, stock: 1 },
-          { id: 3002, specifyValue: '规格3-2', order: 2, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 30, stock: 55 },
-          { id: 3003, specifyValue: '规格3-3', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 50, stock: 662 }
+          { id: 3001, specifyValue: '规格3-1', order: 1, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297507_4.jpg', default: true, deleted: 0, price: 0, stock: 1 },
+          { id: 3002, specifyValue: '规格3-2', order: 2, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: false, deleted: 0, price: 30, stock: 55 },
+          { id: 3003, specifyValue: '规格3-3', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: false, deleted: 0, price: 50, stock: 662 }
         ]
       }],
-      gidRefList: [
-        { gid: 100 },
-        { gid: 101 }
-      ],
+      gidRefList: [],
       categoryList: null,
       categoryDefaultProps: {
         children: 'children',
@@ -439,11 +436,89 @@ export default {
         }
         this.formData = res
       }, 1000)
+    },
+    addSpecify() { // 添加规格项目
+      if (this.specifyList.length >= 3) {
+        this.$message.error('规格项目不能超过3个')
+        return
+      }
+      var v = {
+        id: 400,
+        specifyValue: '',
+        order: '',
+        imgOpen: 0,
+        deleted: 0,
+        children: [
+          { id: '', specifyValue: '', order: '', img: '', default: 1, deleted: 0, price: 0, stock: 0 },
+          { id: '', specifyValue: '', order: '', img: '', default: 0, deleted: 0, price: 0, stock: 0 },
+          { id: '', specifyValue: '', order: '', img: '', default: 0, deleted: 0, price: 0, stock: 0 }
+        ]
+      }
+      this.specifyList.push(v)
+    },
+    removeSpecify(index) { // 删除规格项目
+      this.specifyList.splice(index, 1)
+    },
+    addSpecifyImg(index) { // 添加规格图片
+      this.specifyList[index].imgOpen = event.target.checked
+    },
+    addSpecifyValue(index) { // 添加规格值
+      var v = { id: '', specifyValue: '', order: '', img: '', default: 1, deleted: 0, price: 0, stock: 0 }
+      this.specifyList[index].children.push(v)
+    },
+    removeSpecifyValue(index, rowIndex) { // 删除规格值
+      this.specifyList[index].children.splice(rowIndex, 1)
+    },
+    specifyValueCheck(index, rowIndex) { // 规格值默认项选中
+      this.specifyList[index].children.forEach(e => {
+        e.default = 0
+      })
+      this.specifyList[index].children[rowIndex].default = 1
+    },
+    handleAvatarSuccess(res, file) {
+      this.imageUrl = URL.createObjectURL(file.raw)
+    },
+    beforeAvatarUpload(file) {
+      const isJPG = file.type === 'image/jpeg' || file.type === 'image/png'
+      const isLt2M = file.size / 1024 / 1024 < 2
+
+      if (!isJPG) {
+        this.$message.error('上传头像图片只能是 jpg/jpeg/png 格式!')
+      }
+      if (!isLt2M) {
+        this.$message.error('上传头像图片大小不能超过 2MB!')
+      }
+      return isJPG && isLt2M
     }
   }
 }
 </script>
 
 <style scope>
-
+  .addSpecify {
+    font-size: 14px; color: #409EFF; cursor: pointer;
+  }
+  .avatar-uploader .el-upload {
+    border: 1px dashed #d9d9d9;
+    border-radius: 6px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .avatar-uploader .el-upload:hover {
+    border-color: #409EFF;
+  }
+  .avatar-uploader-icon {
+    font-size: 28px;
+    color: #8c939d;
+    width: 178px;
+    height: 178px;
+    line-height: 178px;
+    text-align: center;
+  }
+  .avatar {
+    width: 178px;
+    height: 178px;
+    display: block;
+  }
 </style>
