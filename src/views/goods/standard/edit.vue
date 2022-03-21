@@ -377,7 +377,7 @@ export default {
             children.forEach(e => {
               var specify = []
               var temp = {}
-              specify.push({ standardFomartId: index + 1, id: e.id, specifyValue: e.specifyValue })
+              specify.push({ id: e.id, specifyValue: e.specifyValue })
               temp.specify = specify
               temp.price = 0
               temp.stock = 0
@@ -393,18 +393,16 @@ export default {
           if (child) {
             child.forEach(e => {
               var spec = []
-              spec.push({ standardFomartId: idx + 1, id: e.id, specifyValue: e.specifyValue })
+              spec.push({ id: e.id, specifyValue: e.specifyValue })
               if (child1) {
-                var childIndex = 0
                 var childSpec = []
                 child1.forEach(ele => {
-                  childSpec = spec.concat([{ standardFomartId: childIndex + 1, id: ele.id, specifyValue: ele.specifyValue }])
+                  childSpec = spec.concat([{ id: ele.id, specifyValue: ele.specifyValue }])
                   var tem = {}
                   tem.specify = childSpec
                   tem.price = 0
                   tem.stock = 0
                   iterator.push(tem)
-                  childIndex++
                 })
               }
             })
@@ -420,15 +418,15 @@ export default {
           if (childs) {
             childs.forEach(e => {
               var specs = []
-              specs.push({ standardFomartId: idxs + 1, id: e.id, specifyValue: e.specifyValue })
+              specs.push({ id: e.id, specifyValue: e.specifyValue })
               if (childs1) {
                 var childSpecs = []
                 childs1.forEach(ele => {
-                  childSpecs = specs.concat([{ standardFomartId: idxs1 + 1, id: ele.id, specifyValue: ele.specifyValue }])
+                  childSpecs = specs.concat([{ id: ele.id, specifyValue: ele.specifyValue }])
                   if (childs2) {
                     var childSpec = []
                     childs2.forEach(element => {
-                      childSpec = childSpecs.concat([{ standardFomartId: idxs2 + 1, id: element.id, specifyValue: element.specifyValue }])
+                      childSpec = childSpecs.concat([{ id: element.id, specifyValue: element.specifyValue }])
                       var tem = {}
                       tem.specify = childSpec
                       tem.price = 0
@@ -575,39 +573,26 @@ export default {
       if (newList) {
         var newListSpecify = this.formatSpecifyList(newList)
         var oldListSpecify = this.formatSpecifyList(oldList)
-        var specifyLength = 0
+        var specifyLength = newListSpecify[0].specify.length
 
-        // 检查下specify规格有几列
-        if (Object.prototype.hasOwnProperty.call(newListSpecify[0], 'standard_format_1')) {
-          specifyLength = 1
-        }
-        if (Object.prototype.hasOwnProperty.call(newListSpecify[0], 'standard_format_2')) {
-          specifyLength = 2
-        }
-        if (Object.prototype.hasOwnProperty.call(newListSpecify[0], 'standard_format_3')) {
-          specifyLength = 3
-        }
-
+        // todo 这里试着优化下
         newListSpecify.forEach(e => {
           oldListSpecify.forEach(ele => {
             switch (specifyLength) {
               case 1:
-                if (e.standard_format_1.specifyValue == ele.standard_format_1.specifyValue) {
+                if (e.specify[0].specifyValue == ele.specify[0].specifyValue) {
                   e.price = ele.price
                   e.stock = ele.stock
                 }
                 break
               case 2:
-                if (e.standard_format_1.specifyValue == ele.standard_format_1.specifyValue &&
-                    e.standard_format_2.specifyValue == ele.standard_format_2.specifyValue) {
+                if (e.specify[0].specifyValue == ele.specify[0].specifyValue && e.specify[1].specifyValue == ele.specify[1].specifyValue) {
                   e.price = ele.price
                   e.stock = ele.stock
                 }
                 break
               case 3:
-                if (e.standard_format_1.specifyValue == ele.standard_format_1.specifyValue &&
-                    e.standard_format_2.specifyValue == ele.standard_format_2.specifyValue &&
-                    e.standard_format_3.specifyValue == ele.standard_format_3.specifyValue) {
+                if (e.specify[0].specifyValue == ele.specify[0].specifyValue && e.specify[1].specifyValue == ele.specify[1].specifyValue && e.specify[2].specifyValue == ele.specify[2].specifyValue) {
                   e.price = ele.price
                   e.stock = ele.stock
                 }
@@ -616,17 +601,38 @@ export default {
           })
         })
 
-        console.log(JSON.stringify(newListSpecify))
+        this.priceStockList = this.rewriteFormatSpecify(newListSpecify, specifyLength)
       }
+    },
+    rewriteFormatSpecify(list, specifyLength) { // 对新的list写回原来的格式
+      if (!list) { return list }
+      var newList = []
+
+      list.forEach(e => {
+        var specify = []
+        for (let index = 0; index < specifyLength; index++) {
+          specify.push({ id: e.specify[index].id, specifyValue: e.specify[index].specifyValue })
+        }
+
+        var obj = {}
+        obj.specify = specify
+        obj.price = e.price
+        obj.stock = e.stock
+        newList.push(obj)
+      })
+
+      return newList
     },
     formatSpecifyList(list) {
       var newList = []
 
       list.forEach(e => {
         var obj = {}
-        e.specify.forEach((el, idx) => {
-          obj['standard_format_' + (idx + 1)] = el.specifyValue
+        var specify = []
+        e.specify.forEach(el => {
+          specify.push({ id: el.id, specifyValue: el.specifyValue })
         })
+        obj.specify = specify
         obj.price = e.price
         obj.stock = e.stock
         newList.push(obj)
