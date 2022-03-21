@@ -112,7 +112,7 @@
                   <el-col :span="2"><el-input v-model="item.order" /></el-col>
                   <el-col :span="8">
                     <el-form-item>
-                      <el-checkbox :checked="item.imgOpen" @change="addSpecifyImg(index)">添加规格图片</el-checkbox>
+                      <el-checkbox :checked="item.imgOpen == 1" @change="addSpecifyImg(index)">添加规格图片</el-checkbox>
                     </el-form-item>
                   </el-col>
                   <el-col :span="2">
@@ -128,7 +128,7 @@
                       <el-col :span="3">
                         <el-form-item label="排序" />
                       </el-col>
-                      <el-col v-if="item.imgOpen == true" :span="5">
+                      <el-col v-if="item.imgOpen == 1" :span="5">
                         <el-form-item label="图片" />
                       </el-col>
                       <el-col :span="3">
@@ -139,7 +139,7 @@
                     <el-row v-for="(row, rowIndex) in item.children" :key="row.id" :gutter="24">
                       <el-col :span="9" :offset="1"><el-input v-model="row.specifyValue" /></el-col>
                       <el-col :span="3" :offset="1"><el-input v-model="row.order" /></el-col>
-                      <el-col v-if="item.imgOpen == true" :span="5">
+                      <el-col v-if="item.imgOpen == 1" :span="5">
                         <el-upload class="avatar-uploader" action="/goods.php?action=imgUpload" :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
                           <img v-if="row.img" :src="row.img" class="avatar">
                           <i v-else class="el-icon-plus avatar-uploader-icon" />
@@ -176,9 +176,9 @@
               <table v-if="priceStockTableBatch.specify.length > 0" class="price-stock-table" border="0" cellspacing="0" cellpadding="0">
                 <tr class="price-stock-table-header">
                   <td v-for="(pstItem, pstIndex) in priceStockTableBatch.specify" :key="pstIndex">
-                    <!-- <el-select clearable placeholder="选择规格">
-                      <el-option v-for="(sfItem, idx) in pstItem.standard_format" :key="idx" :label="sfItem.specifyValue" :value="sfItem.id" />
-                    </el-select> -->
+                    <el-select v-model="pstItem.standard_format_value" clearable placeholder="选择规格">
+                      <el-option v-for="(sfItem) in pstItem.standard_format" :key="sfItem.id" :label="sfItem.specifyValue" :value="sfItem.id" />
+                    </el-select>
                   </td>
                   <td>
                     <el-input v-model="priceStockTableBatch.price" placeholder="请输入价格" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
@@ -445,61 +445,6 @@ export default {
           break
       }
       this.priceStockList = iterator
-      console.log(JSON.stringify(this.specifyList))
-
-      console.log(JSON.stringify(this.priceStockList))
-    },
-    fetchPriceStockDataOld(list, index = 0) { // 组装价格库存数据 废弃
-      if (list.length == index) {
-        return
-      }
-
-      const children = list[index]['children']
-      var iterator = []
-
-      if (children) {
-        if (this.priceStockList.length == 0) {
-          children.forEach(e => {
-            var temp = {}
-            temp.specify = [{ standardFomartId: index + 1, id: e.id, specifyValue: e.specifyValue }]
-            temp.price = 0
-            temp.stock = 0
-            iterator.push(temp)
-          })
-        } else {
-          this.priceStockList.forEach(ele => {
-            children.forEach(e => {
-              var specify = []
-              specify.push({ standardFormatId: ele.specify.standardFormatId, id: ele.specify.id, specifyValue: ele.specify.specifyValue })
-              // todo 这里优化下
-              // var idx = 'standard_format_' + (index + 1)
-              // var prevIdx = 'standard_format_' + (index)
-              // var parentIdx = 'standard_format_' + (index - 1)
-              // var temp = {}
-
-              // if (ele[parentIdx] != null) {
-              //   temp[parentIdx] = { id: ele[parentIdx].id, specifyValue: ele[parentIdx].specifyValue }
-              // }
-
-              // if (ele[prevIdx] != null) {
-              //   temp[prevIdx] = { id: ele[prevIdx].id, specifyValue: ele[prevIdx].specifyValue }
-              // }
-
-              // temp[idx] = { id: e.id, specifyValue: e.specifyValue }
-              // temp.price = this.priceStockTableBatch.price
-              // temp.stock = this.priceStockTableBatch.stock
-
-              // iterator.push(temp)
-            })
-          })
-        }
-
-        this.priceStockList = iterator
-      }
-      console.log(JSON.stringify(this.priceStockList))
-
-      index++
-      this.fetchPriceStockData(list, index)
     },
     fetchData() {
       getCategoryList().then(response => {
@@ -547,8 +492,8 @@ export default {
         deleted: 0,
         children: [
           { id: i1, specifyValue: '', order: '', img: '', default: 1, deleted: 0 },
-          { id: i2, specifyValue: '', order: '', img: '', default: 1, deleted: 0 },
-          { id: i3, specifyValue: '', order: '', img: '', default: 1, deleted: 0 }
+          { id: i2, specifyValue: '', order: '', img: '', default: 0, deleted: 0 },
+          { id: i3, specifyValue: '', order: '', img: '', default: 0, deleted: 0 }
         ]
       }
       this.specifyList.push(v)
@@ -628,22 +573,68 @@ export default {
     },
     matchPriceStock(oldList, newList) {
       if (newList) {
-        newList.forEach(e => {
-          var format1 = e.standard_format_1.specifyValue
-          var format2 = e.standard_format_2.specifyValue
-          var format3 = e.standard_format_3.specifyValue
+        var newListSpecify = this.formatSpecifyList(newList)
+        var oldListSpecify = this.formatSpecifyList(oldList)
+        var specifyLength = 0
 
-          oldList.forEach(ele => {
-            if (ele.standard_format_1.specifyValue == format1 && ele.standard_format_2.specifyValue == format2 && ele.standard_format_3.specifyValue == format3) {
-              e.price = ele.price
-              e.stock = ele.stock
+        // 检查下specify规格有几列
+        if (Object.prototype.hasOwnProperty.call(newListSpecify[0], 'standard_format_1')) {
+          specifyLength = 1
+        }
+        if (Object.prototype.hasOwnProperty.call(newListSpecify[0], 'standard_format_2')) {
+          specifyLength = 2
+        }
+        if (Object.prototype.hasOwnProperty.call(newListSpecify[0], 'standard_format_3')) {
+          specifyLength = 3
+        }
+
+        newListSpecify.forEach(e => {
+          oldListSpecify.forEach(ele => {
+            switch (specifyLength) {
+              case 1:
+                if (e.standard_format_1.specifyValue == ele.standard_format_1.specifyValue) {
+                  e.price = ele.price
+                  e.stock = ele.stock
+                }
+                break
+              case 2:
+                if (e.standard_format_1.specifyValue == ele.standard_format_1.specifyValue &&
+                    e.standard_format_2.specifyValue == ele.standard_format_2.specifyValue) {
+                  e.price = ele.price
+                  e.stock = ele.stock
+                }
+                break
+              case 3:
+                if (e.standard_format_1.specifyValue == ele.standard_format_1.specifyValue &&
+                    e.standard_format_2.specifyValue == ele.standard_format_2.specifyValue &&
+                    e.standard_format_3.specifyValue == ele.standard_format_3.specifyValue) {
+                  e.price = ele.price
+                  e.stock = ele.stock
+                }
+                break
             }
           })
         })
+
+        console.log(JSON.stringify(newListSpecify))
       }
     },
-    batchFillTable() { // 批量填充价格库存表
+    formatSpecifyList(list) {
+      var newList = []
 
+      list.forEach(e => {
+        var obj = {}
+        e.specify.forEach((el, idx) => {
+          obj['standard_format_' + (idx + 1)] = el.specifyValue
+        })
+        obj.price = e.price
+        obj.stock = e.stock
+        newList.push(obj)
+      })
+
+      return newList
+    },
+    batchFillTable() { // 批量填充价格库存表
       // if (!this.priceStockTableBatch.standard_format_1_value) {
       //   this.$message.warning(this.specifyList[0].specifyValue + ' 必填！')
       //   return
