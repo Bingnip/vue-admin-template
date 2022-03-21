@@ -176,7 +176,7 @@
               <table v-if="priceStockTableBatch.specify.length > 0" class="price-stock-table" border="0" cellspacing="0" cellpadding="0">
                 <tr class="price-stock-table-header">
                   <td v-for="(pstItem, pstIndex) in priceStockTableBatch.specify" :key="pstIndex">
-                    <el-select v-model="pstItem.standard_format_value" clearable placeholder="选择规格">
+                    <el-select v-model="pstItem.id" clearable placeholder="选择规格">
                       <el-option v-for="(sfItem) in pstItem.standard_format" :key="sfItem.id" :label="sfItem.specifyValue" :value="sfItem.id" />
                     </el-select>
                   </td>
@@ -286,6 +286,7 @@
 import { getCategoryList, getSpecifyData } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
+import { in_array } from '@/utils/common'
 
 export default {
   components: { Tinymce, ImgUpload },
@@ -345,7 +346,7 @@ export default {
   created() {
     this.fetchData()
 
-    if (this.specifyList) {
+    if (this.specifyList.length > 0) {
       this.fetchPriceStockData(this.specifyList)
       this.fetchPriceStockBatch()
     }
@@ -363,8 +364,8 @@ export default {
       for (let index = 1; index <= this.specifyList.length; index++) {
         var children = JSON.parse(JSON.stringify(this.specifyList[index - 1].children))
         children.unshift(allOptions)
-        this.priceStockTableBatch.specify[index - 1]['standard_format'] = children
-        this.priceStockTableBatch.specify[index - 1]['standard_format_value'] = ''
+        this.priceStockTableBatch.specify[index - 1].standard_format = children
+        this.priceStockTableBatch.specify[index - 1].name = this.specifyList[index - 1].specifyValue
       }
     },
     fetchPriceStockData(list) { // 组装价格库存数据
@@ -502,15 +503,13 @@ export default {
     renderPriceStockBatchTable() { // 生成批量修改的那些数据
       var specify = []
 
-      var index = 0
       this.specifyList.forEach(e => {
         var obj = {}
-        obj['id'] = index + 1
+        obj['id'] = ''
         obj['standard_format'] = []
-        obj['standard_format_value'] = ''
+        obj['name'] = e.specifyValue
 
         specify.push(obj)
-        index++
       })
 
       this.priceStockTableBatch.specify = specify
@@ -518,13 +517,15 @@ export default {
     removeSpecify(index) { // 删除规格项目
       this.specifyList.splice(index, 1)
       this.fetchPriceStockData(this.specifyList)
-      // this.renderPriceStockBatchTable()
+      this.renderPriceStockBatchTable()
+      this.fetchPriceStockBatch()
     },
     addSpecifyImg(index) { // 添加规格图片
       this.specifyList[index].imgOpen = event.target.checked
     },
     addSpecifyValue(index) { // 添加规格值
-      var v = { id: '', specifyValue: '', order: '', img: '', default: 0, deleted: 0, price: 0, stock: 0 }
+      this.newSpcifyValueIndex += 1
+      var v = { id: this.newSpcifyValueIndex, specifyValue: '', order: '', img: '', default: 0, deleted: 0, price: 0, stock: 0 }
       this.specifyList[index].children.push(v)
     },
     removeSpecifyValue(index, rowIndex) { // 删除规格值
@@ -560,7 +561,7 @@ export default {
       }
       return isJPG && isLt2M
     },
-    buildePriceStockList() { // 生成价格表
+    buildePriceStockList() { // 重置价格表
       const oldPriceStockList = this.priceStockList
       this.priceStockList = []
       this.fetchPriceStockData(this.specifyList)
@@ -641,22 +642,85 @@ export default {
       return newList
     },
     batchFillTable() { // 批量填充价格库存表
-      // if (!this.priceStockTableBatch.standard_format_1_value) {
-      //   this.$message.warning(this.specifyList[0].specifyValue + ' 必填！')
-      //   return
-      // } else if (!this.priceStockTableBatch.standard_format_2_value) {
-      //   this.$message.warning(this.specifyList[1].specifyValue + ' 必填！')
-      //   return
-      // } else if (!this.priceStockTableBatch.standard_format_3_value) {
-      //   this.$message.warning(this.specifyList[2].specifyValue + ' 必填！')
-      //   return
-      // } else if (!this.priceStockTableBatch.price) {
-      //   this.$message.warning('价格 必填！')
-      //   return
-      // } else if (!this.priceStockTableBatch.stock) {
-      //   this.$message.warning('库存 必填！')
-      //   return
-      // }
+      var specify = this.priceStockTableBatch.specify
+      var specifySelected = []
+
+      if (specify) {
+        specify.forEach(e => {
+          var selected = []
+
+          if (e.id === '') {
+            this.$message.warning('请输入批量修改 ' + e.name)
+            return false
+          }
+
+          if (e.id == 0) {
+            for (let index = 1; index < e.standard_format.length; index++) {
+              selected.push(e.standard_format[index].specifyValue)
+            }
+          } else {
+            var selectedId = e.id
+            for (let index = 1; index < e.standard_format.length; index++) {
+              if (e.standard_format[index].id == selectedId) {
+                selected.push(e.standard_format[index].specifyValue)
+              }
+            }
+          }
+
+          specifySelected.push(selected)
+        })
+      }
+
+      if (!this.priceStockTableBatch.price) {
+        this.$message.warning('请输入批量修改 价格')
+        return false
+      }
+
+      if (!this.priceStockTableBatch.stock) {
+        this.$message.warning('请输入批量修改 库存')
+        return false
+      }
+
+      var batchObj = {}
+      batchObj.specify = specifySelected
+      batchObj.price = this.priceStockTableBatch.price
+      batchObj.stock = this.priceStockTableBatch.stock
+
+      this.batchFillOperate(batchObj)
+    },
+    batchFillOperate(batchObj) { // 开始真正的批量操作
+      var batchSpecify = batchObj.specify
+      var specifyLength = batchSpecify.length
+
+      this.priceStockList.forEach(e => {
+        // todo 这里需要优化下
+        switch (specifyLength) {
+          case 1:
+            var specify = batchSpecify[0]
+            if (in_array(e.specify[0].specifyValue, specify)) {
+              e.price = batchObj.price
+              e.stock = batchObj.stock
+            }
+            break
+          case 2:
+            var specify1 = batchSpecify[0]
+            var specify2 = batchSpecify[1]
+            if (in_array(e.specify[0].specifyValue, specify1) && in_array(e.specify[1].specifyValue, specify2)) {
+              e.price = batchObj.price
+              e.stock = batchObj.stock
+            }
+            break
+          case 3:
+            var specifys1 = batchSpecify[0]
+            var specifys2 = batchSpecify[1]
+            var specifys3 = batchSpecify[2]
+            if (in_array(e.specify[0].specifyValue, specifys1) && in_array(e.specify[1].specifyValue, specifys2) && in_array(e.specify[2].specifyValue, specifys3)) {
+              e.price = batchObj.price
+              e.stock = batchObj.stock
+            }
+            break
+        }
+      })
     }
   }
 }
