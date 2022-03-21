@@ -99,17 +99,17 @@
 
           <el-tab-pane label="商品规格">
             <el-header><el-button type="primary" size="mini" @click="addSpecify()">添加规格项目</el-button></el-header>
-            <el-main>
+            <el-main v-if="specifyList.length > 0">
               <table v-for="(item, index) in specifyList" :key="item.id" style="width: 80%; margin: 15px; padding: 20px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);border-radius: 4px;">
                 <el-row :gutter="24">
                   <el-col :span="2">
                     <el-form-item label="规格名：" />
                   </el-col>
-                  <el-col :span="8"><el-input :value="item.specifyValue" /></el-col>
+                  <el-col :span="8"><el-input v-model="item.specifyValue" /></el-col>
                   <el-col :span="2">
                     <el-form-item label="排序：" />
                   </el-col>
-                  <el-col :span="2"><el-input :value="item.order" /></el-col>
+                  <el-col :span="2"><el-input v-model="item.order" /></el-col>
                   <el-col :span="8">
                     <el-form-item>
                       <el-checkbox :checked="item.imgOpen" @change="addSpecifyImg(index)">添加规格图片</el-checkbox>
@@ -137,8 +137,8 @@
                       <el-col :span="3" />
                     </el-row>
                     <el-row v-for="(row, rowIndex) in item.children" :key="row.id" :gutter="24">
-                      <el-col :span="9" :offset="1"><el-input :value="row.specifyValue" /></el-col>
-                      <el-col :span="3" :offset="1"><el-input :value="row.order" /></el-col>
+                      <el-col :span="9" :offset="1"><el-input v-model="row.specifyValue" /></el-col>
+                      <el-col :span="3" :offset="1"><el-input v-model="row.order" /></el-col>
                       <el-col v-if="item.imgOpen == true" :span="5">
                         <el-upload class="avatar-uploader" action="/goods.php?action=imgUpload" :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
                           <img v-if="row.img" :src="row.img" class="avatar">
@@ -163,33 +163,53 @@
           </el-tab-pane>
 
           <el-tab-pane label="价格库存">
-            <el-row>
-              <el-col :span="2" :offset="1"><el-button type="primary" size="small">生成价格表</el-button></el-col>
-              <el-col :span="2"><el-button type="primary" size="small">批量填充</el-button></el-col>
-              <el-col :span="7">
-                <el-form-item>
-                  在标题栏中输入或选择内容可以进行筛选和批量填充
-                </el-form-item>
-              </el-col>
-            </el-row>
-            <el-table :data="priceStockList" :span-method="objectSpanMethod" border style="width: 80%; margin: 0 0 0 30px;">
-              <el-table-column prop="p1" width="180" />
-              <el-table-column prop="p2" />
-              <el-table-column prop="p3" />
-              <el-table-column prop="price" label="价格" />
-              <el-table-column prop="stock" label="库存" />
-            </el-table>
+            <template v-if="specifyList.length > 0">
+              <el-row>
+                <el-col :span="2" :offset="1"><el-button type="primary" size="small" @click="buildePriceStockList">重置价格表</el-button></el-col>
+                <el-col :span="3"><el-button type="primary" size="small" @click="batchFillTable">批量填充</el-button></el-col>
+                <el-col :span="15">
+                  <el-form-item>
+                    在标题栏中输入或选择内容可以进行筛选和批量填充
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <table v-if="priceStockTableBatch.specify.length > 0" class="price-stock-table" border="0" cellspacing="0" cellpadding="0">
+                <tr class="price-stock-table-header">
+                  <td v-for="(pstItem, pstIndex) in priceStockTableBatch.specify" :key="pstIndex">
+                    <!-- <el-select clearable placeholder="选择规格">
+                      <el-option v-for="(sfItem, idx) in pstItem.standard_format" :key="idx" :label="sfItem.specifyValue" :value="sfItem.id" />
+                    </el-select> -->
+                  </td>
+                  <td>
+                    <el-input v-model="priceStockTableBatch.price" placeholder="请输入价格" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
+                  </td>
+                  <td>
+                    <el-input v-model="priceStockTableBatch.stock" placeholder="请输入库存" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
+                  </td>
+                </tr>
+                <tr>
+                  <td v-for="(items, idx) in specifyList" :key="idx">{{ items.specifyValue }}</td>
+                  <td>价格</td><td>库存</td></tr>
+                <template v-for="(item, idx) in priceStockList">
+                  <tr :key="idx" class="row-hightlight">
+                    <td v-for="(psItem, psIdx) in item.specify" :key="psIdx" :name="psItem.id">{{ psItem.specifyValue }}</td>
+                    <td><el-input v-model="item.price" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" /></td>
+                    <td><el-input v-model="item.stock" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" /></td>
+                  </tr>
+                </template>
+              </table>
+            </template>
             <br>
             <el-row>
               <el-col :span="1">
                 <el-form-item label="划线价：" />
               </el-col>
-              <el-col :span="4">
+              <el-col :span="7">
                 <el-form-item>
                   <el-input />
                 </el-form-item>
               </el-col>
-              <el-col :span="19">
+              <el-col :span="16">
                 <el-form-item>
                   （未编辑则前端不显示划线价及折扣比例）
                 </el-form-item>
@@ -201,7 +221,8 @@
               </el-col>
               <el-col :span="23">
                 <el-form-item>
-                  <span>2222</span>
+                  <span v-if="specifyList.length == 0">0</span>
+                  <span v-else>{{ totalStock }}</span>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -262,7 +283,7 @@
 </template>
 
 <script>
-import { getCategoryList } from '@/api/goods/standard'
+import { getCategoryList, getSpecifyData } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
 
@@ -270,43 +291,19 @@ export default {
   components: { Tinymce, ImgUpload },
   data() {
     return {
+      value: '',
       editType: 'create',
       type: 'add', // 图片上传的类型
+      totalStock: 0,
+      newSpcifyIndex: 0, // 新增规格临时下标
+      newSpcifyValueIndex: 10, // 新增规格值的临时下标
       priceStockList: [],
-      specifyList: [{
-        id: 100,
-        specifyValue: '规格1',
-        order: 23,
-        imgOpen: true,
-        deleted: 0,
-        children: [
-          { id: 1001, specifyValue: '规格1-1', order: 1, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297507_4.jpg', default: 1, deleted: 0, price: 0, stock: 1 },
-          { id: 1002, specifyValue: '规格1-2', order: 2, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 10, stock: 5 },
-          { id: 1003, specifyValue: '规格1-3', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: 0, deleted: 0, price: 20, stock: 6 }
-        ]
-      }, {
-        id: 200,
-        specifyValue: '规格2',
-        order: 2,
-        imgOpen: false,
-        deleted: 0,
-        children: [
-          { id: 2001, specifyValue: '规格2-1', order: 1, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297507_4.jpg', default: true, deleted: 0, price: 0, stock: 1 },
-          { id: 2002, specifyValue: '规格2-2', order: 2, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: false, deleted: 0, price: 0.66, stock: 4 },
-          { id: 2003, specifyValue: '规格2-3', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: false, deleted: 0, price: 7.36, stock: 5 }
-        ]
-      }, {
-        id: 300,
-        specifyValue: '规格3',
-        order: 3,
-        imgOpen: false,
-        deleted: 0,
-        children: [
-          { id: 3001, specifyValue: '规格3-1', order: 1, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297507_4.jpg', default: true, deleted: 0, price: 0, stock: 1 },
-          { id: 3002, specifyValue: '规格3-2', order: 2, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: false, deleted: 0, price: 30, stock: 55 },
-          { id: 3003, specifyValue: '规格3-3', order: 3, img: 'https://du7nt18x31vr8.cloudfront.net/assets/images/product_particular/1646297510_-.jpg', default: false, deleted: 0, price: 50, stock: 662 }
-        ]
-      }],
+      specifyList: [],
+      priceStockTableBatch: {
+        specify: [],
+        price: '',
+        stock: ''
+      },
       gidRefList: [],
       categoryList: null,
       categoryDefaultProps: {
@@ -347,18 +344,113 @@ export default {
   },
   created() {
     this.fetchData()
+
     if (this.specifyList) {
       this.fetchPriceStockData(this.specifyList)
+      this.fetchPriceStockBatch()
     }
 
     this.type = this.$route.query.type || 'add'
+
     if (this.type === 'edit') {
       this.getDetail()
     }
   },
   methods: {
-    fetchPriceStockData(list, index = 0) {
-      if (list.length === index) {
+    fetchPriceStockBatch() { // 组装价格库存批处理的数据
+      var allOptions = { id: 0, specifyValue: 'All' }
+
+      for (let index = 1; index <= this.specifyList.length; index++) {
+        var children = JSON.parse(JSON.stringify(this.specifyList[index - 1].children))
+        children.unshift(allOptions)
+        this.priceStockTableBatch.specify[index - 1]['standard_format'] = children
+        this.priceStockTableBatch.specify[index - 1]['standard_format_value'] = ''
+      }
+    },
+    fetchPriceStockData(list) { // 组装价格库存数据
+      var iterator = []
+      switch (list.length) {
+        case 1:
+          var index = 0
+          var children = list[index].children
+          if (children) {
+            children.forEach(e => {
+              var specify = []
+              var temp = {}
+              specify.push({ standardFomartId: index + 1, id: e.id, specifyValue: e.specifyValue })
+              temp.specify = specify
+              temp.price = 0
+              temp.stock = 0
+              iterator.push(temp)
+            })
+          }
+          break
+        case 2:
+          var idx = 0
+          var idx1 = 1
+          var child = list[idx].children
+          var child1 = list[idx1].children
+          if (child) {
+            child.forEach(e => {
+              var spec = []
+              spec.push({ standardFomartId: idx + 1, id: e.id, specifyValue: e.specifyValue })
+              if (child1) {
+                var childIndex = 0
+                var childSpec = []
+                child1.forEach(ele => {
+                  childSpec = spec.concat([{ standardFomartId: childIndex + 1, id: ele.id, specifyValue: ele.specifyValue }])
+                  var tem = {}
+                  tem.specify = childSpec
+                  tem.price = 0
+                  tem.stock = 0
+                  iterator.push(tem)
+                  childIndex++
+                })
+              }
+            })
+          }
+          break
+        case 3:
+          var idxs = 0
+          var idxs1 = 1
+          var idxs2 = 2
+          var childs = list[idxs].children
+          var childs1 = list[idxs1].children
+          var childs2 = list[idxs2].children
+          if (childs) {
+            childs.forEach(e => {
+              var specs = []
+              specs.push({ standardFomartId: idxs + 1, id: e.id, specifyValue: e.specifyValue })
+              if (childs1) {
+                var childSpecs = []
+                childs1.forEach(ele => {
+                  childSpecs = specs.concat([{ standardFomartId: idxs1 + 1, id: ele.id, specifyValue: ele.specifyValue }])
+                  if (childs2) {
+                    var childSpec = []
+                    childs2.forEach(element => {
+                      childSpec = childSpecs.concat([{ standardFomartId: idxs2 + 1, id: element.id, specifyValue: element.specifyValue }])
+                      var tem = {}
+                      tem.specify = childSpec
+                      tem.price = 0
+                      tem.stock = 0
+                      iterator.push(tem)
+                    })
+                  }
+                })
+              }
+            })
+          }
+          break
+        default:
+          break
+      }
+      this.priceStockList = iterator
+      console.log(JSON.stringify(this.specifyList))
+
+      console.log(JSON.stringify(this.priceStockList))
+    },
+    fetchPriceStockDataOld(list, index = 0) { // 组装价格库存数据 废弃
+      if (list.length == index) {
         return
       }
 
@@ -368,36 +460,43 @@ export default {
       if (children) {
         if (this.priceStockList.length == 0) {
           children.forEach(e => {
-            var idx = 'p' + (index + 1)
             var temp = {}
-            temp[idx] = e.specifyValue
-            temp['price'] = e.price
-            temp['stock'] = e.stock
-
+            temp.specify = [{ standardFomartId: index + 1, id: e.id, specifyValue: e.specifyValue }]
+            temp.price = 0
+            temp.stock = 0
             iterator.push(temp)
           })
         } else {
-          this.priceStockList.forEach(e => {
-            children.forEach(ele => {
+          this.priceStockList.forEach(ele => {
+            children.forEach(e => {
+              var specify = []
+              specify.push({ standardFormatId: ele.specify.standardFormatId, id: ele.specify.id, specifyValue: ele.specify.specifyValue })
               // todo 这里优化下
-              var idx = 'p' + (index + 1)
-              var prevIdx = 'p' + index
-              var parentIdx = 'p' + (index - 1)
+              // var idx = 'standard_format_' + (index + 1)
+              // var prevIdx = 'standard_format_' + (index)
+              // var parentIdx = 'standard_format_' + (index - 1)
+              // var temp = {}
 
-              var temp = {}
-              temp[parentIdx] = e[parentIdx]
-              temp[prevIdx] = e[prevIdx]
-              temp[idx] = ele.specifyValue
-              temp['price'] = e.price
-              temp['stock'] = e.stock
+              // if (ele[parentIdx] != null) {
+              //   temp[parentIdx] = { id: ele[parentIdx].id, specifyValue: ele[parentIdx].specifyValue }
+              // }
 
-              iterator.push(temp)
+              // if (ele[prevIdx] != null) {
+              //   temp[prevIdx] = { id: ele[prevIdx].id, specifyValue: ele[prevIdx].specifyValue }
+              // }
+
+              // temp[idx] = { id: e.id, specifyValue: e.specifyValue }
+              // temp.price = this.priceStockTableBatch.price
+              // temp.stock = this.priceStockTableBatch.stock
+
+              // iterator.push(temp)
             })
           })
         }
 
         this.priceStockList = iterator
       }
+      console.log(JSON.stringify(this.priceStockList))
 
       index++
       this.fetchPriceStockData(list, index)
@@ -406,24 +505,16 @@ export default {
       getCategoryList().then(response => {
         this.categoryList = response.data.items
       })
-    },
-    objectSpanMethod({ row, column, rowIndex, columnIndex }) {
-      // if (columnIndex === 0) {
-      //   if (rowIndex % 2 === 0) {
-      //     return {
-      //       rowspan: 2,
-      //       colspan: 1
-      //     }
-      //   } else {
-      //     return {
-      //       rowspan: 0,
-      //       colspan: 0
-      //     }
-      //   }
-      // }
+
+      if (this.editType == 'edit') {
+        getSpecifyData().then(response => {
+          this.specifyList = response.data
+        })
+      }
     },
     prevent(e) {
       var keynum = window.event ? e.keyCode : e.which // 获取键盘码
+
       if (keynum == 189 || keynum == 190 || keynum == 109 || keynum == 110) {
         this.$message.warning('禁止输入小数以及负数')
         e.target.value = ''
@@ -442,32 +533,68 @@ export default {
         this.$message.error('规格项目不能超过3个')
         return
       }
+
+      this.newSpcifyIndex += 1
+      var i1 = this.newSpcifyValueIndex += 1
+      var i2 = this.newSpcifyValueIndex += 1
+      var i3 = this.newSpcifyValueIndex += 1
+
       var v = {
-        id: 400,
+        id: this.newSpcifyIndex,
         specifyValue: '',
         order: '',
         imgOpen: 0,
         deleted: 0,
         children: [
-          { id: '', specifyValue: '', order: '', img: '', default: 1, deleted: 0, price: 0, stock: 0 },
-          { id: '', specifyValue: '', order: '', img: '', default: 0, deleted: 0, price: 0, stock: 0 },
-          { id: '', specifyValue: '', order: '', img: '', default: 0, deleted: 0, price: 0, stock: 0 }
+          { id: i1, specifyValue: '', order: '', img: '', default: 1, deleted: 0 },
+          { id: i2, specifyValue: '', order: '', img: '', default: 1, deleted: 0 },
+          { id: i3, specifyValue: '', order: '', img: '', default: 1, deleted: 0 }
         ]
       }
       this.specifyList.push(v)
+      this.fetchPriceStockData(this.specifyList)
+      this.renderPriceStockBatchTable()
+      this.fetchPriceStockBatch()
+    },
+    renderPriceStockBatchTable() { // 生成批量修改的那些数据
+      var specify = []
+
+      var index = 0
+      this.specifyList.forEach(e => {
+        var obj = {}
+        obj['id'] = index + 1
+        obj['standard_format'] = []
+        obj['standard_format_value'] = ''
+
+        specify.push(obj)
+        index++
+      })
+
+      this.priceStockTableBatch.specify = specify
     },
     removeSpecify(index) { // 删除规格项目
       this.specifyList.splice(index, 1)
+      this.fetchPriceStockData(this.specifyList)
+      // this.renderPriceStockBatchTable()
     },
     addSpecifyImg(index) { // 添加规格图片
       this.specifyList[index].imgOpen = event.target.checked
     },
     addSpecifyValue(index) { // 添加规格值
-      var v = { id: '', specifyValue: '', order: '', img: '', default: 1, deleted: 0, price: 0, stock: 0 }
+      var v = { id: '', specifyValue: '', order: '', img: '', default: 0, deleted: 0, price: 0, stock: 0 }
       this.specifyList[index].children.push(v)
     },
     removeSpecifyValue(index, rowIndex) { // 删除规格值
+      var isRemoveChecked = false
+
+      if (this.specifyList[index].children[rowIndex].default == 1) {
+        isRemoveChecked = true
+      }
       this.specifyList[index].children.splice(rowIndex, 1)
+
+      if (isRemoveChecked) {
+        this.specifyList[index].children[0].default = 1
+      }
     },
     specifyValueCheck(index, rowIndex) { // 规格值默认项选中
       this.specifyList[index].children.forEach(e => {
@@ -489,6 +616,50 @@ export default {
         this.$message.error('上传头像图片大小不能超过 2MB!')
       }
       return isJPG && isLt2M
+    },
+    buildePriceStockList() { // 生成价格表
+      const oldPriceStockList = this.priceStockList
+      this.priceStockList = []
+      this.fetchPriceStockData(this.specifyList)
+      const newPriceStockList = this.priceStockList
+      this.matchPriceStock(oldPriceStockList, newPriceStockList)
+      this.fetchPriceStockBatch()
+      this.$message.success('重置成功')
+    },
+    matchPriceStock(oldList, newList) {
+      if (newList) {
+        newList.forEach(e => {
+          var format1 = e.standard_format_1.specifyValue
+          var format2 = e.standard_format_2.specifyValue
+          var format3 = e.standard_format_3.specifyValue
+
+          oldList.forEach(ele => {
+            if (ele.standard_format_1.specifyValue == format1 && ele.standard_format_2.specifyValue == format2 && ele.standard_format_3.specifyValue == format3) {
+              e.price = ele.price
+              e.stock = ele.stock
+            }
+          })
+        })
+      }
+    },
+    batchFillTable() { // 批量填充价格库存表
+
+      // if (!this.priceStockTableBatch.standard_format_1_value) {
+      //   this.$message.warning(this.specifyList[0].specifyValue + ' 必填！')
+      //   return
+      // } else if (!this.priceStockTableBatch.standard_format_2_value) {
+      //   this.$message.warning(this.specifyList[1].specifyValue + ' 必填！')
+      //   return
+      // } else if (!this.priceStockTableBatch.standard_format_3_value) {
+      //   this.$message.warning(this.specifyList[2].specifyValue + ' 必填！')
+      //   return
+      // } else if (!this.priceStockTableBatch.price) {
+      //   this.$message.warning('价格 必填！')
+      //   return
+      // } else if (!this.priceStockTableBatch.stock) {
+      //   this.$message.warning('库存 必填！')
+      //   return
+      // }
     }
   }
 }
@@ -520,5 +691,31 @@ export default {
     width: 178px;
     height: 178px;
     display: block;
+  }
+  .price-stock-table .price-stock-table-header td {
+    background:rgb(242, 242, 242, 1);
+  }
+  .price-stock-table {
+    width: 80%; margin: 0 0 0 30px; border: 1px solid #ebeef5;
+  }
+  .price-stock-table td {
+    border: 1px solid #ebeef5;
+    padding: 10px 10px;
+    min-width: 0;
+    box-sizing: border-box;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+    position: relative;
+    text-align:center;
+  }
+  .row-hightlight:hover{
+    background: rgb(242, 242, 242, 1);
+  }
+  input::-webkit-outer-spin-button,
+  input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+  }
+  input[type="number"]{
+    -moz-appearance: textfield;
   }
 </style>
