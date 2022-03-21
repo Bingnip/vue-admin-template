@@ -194,7 +194,7 @@
                   <tr :key="idx" class="row-hightlight">
                     <td v-for="(psItem, psIdx) in item.specify" :key="psIdx" :name="psItem.id">{{ psItem.specifyValue }}</td>
                     <td><el-input v-model="item.price" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" /></td>
-                    <td><el-input v-model="item.stock" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" /></td>
+                    <td><el-input v-model="item.stock" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" @input="countAllStock" @blur="resetStockInput(idx)" /></td>
                   </tr>
                 </template>
               </table>
@@ -206,7 +206,7 @@
               </el-col>
               <el-col :span="7">
                 <el-form-item>
-                  <el-input />
+                  <el-input v-model="througnLinePrice" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
                 </el-form-item>
               </el-col>
               <el-col :span="16">
@@ -222,7 +222,7 @@
               <el-col :span="23">
                 <el-form-item>
                   <span v-if="specifyList.length == 0">0</span>
-                  <span v-else>{{ totalStock }}</span>
+                  <span v-else>{{ stockCount }}</span>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -295,7 +295,6 @@ export default {
       value: '',
       editType: 'create',
       type: 'add', // 图片上传的类型
-      totalStock: 0,
       newSpcifyIndex: 0, // 新增规格临时下标
       newSpcifyValueIndex: 10, // 新增规格值的临时下标
       priceStockList: [],
@@ -305,6 +304,8 @@ export default {
         price: '',
         stock: ''
       },
+      stockCount: 0, // 库存总计
+      througnLinePrice: 0, // 划线价
       gidRefList: [],
       categoryList: null,
       categoryDefaultProps: {
@@ -499,6 +500,7 @@ export default {
       this.fetchPriceStockData(this.specifyList)
       this.renderPriceStockBatchTable()
       this.fetchPriceStockBatch()
+      this.countAllStock()
     },
     renderPriceStockBatchTable() { // 生成批量修改的那些数据
       var specify = []
@@ -519,6 +521,7 @@ export default {
       this.fetchPriceStockData(this.specifyList)
       this.renderPriceStockBatchTable()
       this.fetchPriceStockBatch()
+      this.countAllStock()
     },
     addSpecifyImg(index) { // 添加规格图片
       this.specifyList[index].imgOpen = event.target.checked
@@ -566,47 +569,48 @@ export default {
       this.priceStockList = []
       this.fetchPriceStockData(this.specifyList)
       const newPriceStockList = this.priceStockList
+
+      if (!oldPriceStockList) { return }
       this.matchPriceStock(oldPriceStockList, newPriceStockList)
       this.fetchPriceStockBatch()
+      this.countAllStock()
       this.$message.success('重置成功')
     },
     matchPriceStock(oldList, newList) {
-      if (newList) {
-        var newListSpecify = this.formatSpecifyList(newList)
-        var oldListSpecify = this.formatSpecifyList(oldList)
-        var specifyLength = newListSpecify[0].specify.length
+      var newListSpecify = this.formatSpecifyList(newList)
+      var oldListSpecify = this.formatSpecifyList(oldList)
+      var specifyLength = newListSpecify[0].specify.length
 
-        // todo 这里试着优化下
-        newListSpecify.forEach(e => {
-          oldListSpecify.forEach(ele => {
-            switch (specifyLength) {
-              case 1:
-                if (e.specify[0].specifyValue == ele.specify[0].specifyValue) {
-                  e.price = ele.price
-                  e.stock = ele.stock
-                }
-                break
-              case 2:
-                if (e.specify[0].specifyValue == ele.specify[0].specifyValue && e.specify[1].specifyValue == ele.specify[1].specifyValue) {
-                  e.price = ele.price
-                  e.stock = ele.stock
-                }
-                break
-              case 3:
-                if (e.specify[0].specifyValue == ele.specify[0].specifyValue && e.specify[1].specifyValue == ele.specify[1].specifyValue && e.specify[2].specifyValue == ele.specify[2].specifyValue) {
-                  e.price = ele.price
-                  e.stock = ele.stock
-                }
-                break
-            }
-          })
+      // todo 这里试着优化下
+      newListSpecify.forEach(e => {
+        oldListSpecify.forEach(ele => {
+          switch (specifyLength) {
+            case 1:
+              if (e.specify[0].specifyValue == ele.specify[0].specifyValue) {
+                e.price = ele.price
+                e.stock = ele.stock
+              }
+              break
+            case 2:
+              if (e.specify[0].specifyValue == ele.specify[0].specifyValue && e.specify[1].specifyValue == ele.specify[1].specifyValue) {
+                e.price = ele.price
+                e.stock = ele.stock
+              }
+              break
+            case 3:
+              if (e.specify[0].specifyValue == ele.specify[0].specifyValue && e.specify[1].specifyValue == ele.specify[1].specifyValue && e.specify[2].specifyValue == ele.specify[2].specifyValue) {
+                e.price = ele.price
+                e.stock = ele.stock
+              }
+              break
+          }
         })
+      })
 
-        this.priceStockList = this.rewriteFormatSpecify(newListSpecify, specifyLength)
-      }
+      this.priceStockList = this.rewriteFormatSpecify(newListSpecify, specifyLength)
     },
     rewriteFormatSpecify(list, specifyLength) { // 对新的list写回原来的格式
-      if (!list) { return list }
+      if (!list) { return }
       var newList = []
 
       list.forEach(e => {
@@ -625,6 +629,7 @@ export default {
       return newList
     },
     formatSpecifyList(list) {
+      if (!list) { return }
       var newList = []
 
       list.forEach(e => {
@@ -687,6 +692,7 @@ export default {
       batchObj.stock = this.priceStockTableBatch.stock
 
       this.batchFillOperate(batchObj)
+      this.countAllStock()
     },
     batchFillOperate(batchObj) { // 开始真正的批量操作
       var batchSpecify = batchObj.specify
@@ -721,6 +727,22 @@ export default {
             break
         }
       })
+    },
+    countAllStock() { // 计算总库存
+      var stockCount = 0
+      if (this.priceStockList) {
+        var priceStockList = this.priceStockList
+
+        priceStockList.forEach(e => {
+          stockCount += parseInt(e.stock)
+        })
+        this.stockCount = stockCount
+      }
+    },
+    resetStockInput(index) { // 库存input空的话改0
+      if (this.priceStockList[index].stock.trim() === '') {
+        this.priceStockList[index].stock = 0
+      }
     }
   }
 }
