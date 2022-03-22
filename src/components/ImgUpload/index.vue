@@ -39,7 +39,7 @@
         ref="uploadRef"
         class="uploadBox"
         :style="{ width: width + 'px', height: height + 'px' }"
-        action="https://httpbin.org/post"
+        :action="uploadUrl"
         :headers="headers"
         accept=".jpg,.jpeg,.png"
         :show-file-list="false"
@@ -65,6 +65,7 @@
 import vuedraggable from 'vuedraggable' // 一款vue拖拽插件
 import lrz from 'lrz' // 一款图片压缩插件
 import utils from '@/utils/img-upload'
+import { getToken } from '@/utils/auth'
 
 export default {
   name: 'ImgUpload',
@@ -115,6 +116,7 @@ export default {
       isUploading: false, // 正在上传状态
       isFirstMount: true, // 控制防止重复回显
       uploadUrl: '/goods.php?action=imgUpload'
+      // uploadUrl: 'https://httpbin.org/post'
     }
   },
 
@@ -154,6 +156,9 @@ export default {
     if (this.value.length > 0) {
       this.syncElUpload()
     }
+
+    var token = getToken()
+    this.uploadUrl = this.uploadUrl + '&token=' + token
   },
 
   methods: {
@@ -198,9 +203,9 @@ export default {
     },
     // 上传完单张图片
     onSuccessUpload(res, file, fileList) {
-      if (res.files) {
+      if (!res.error && res.result) {
         if (this.imgList.length < this.limit) {
-          this.imgList.push(res.files.file)
+          this.imgList.push(res.result.link)
         }
       } else {
         this.syncElUpload()

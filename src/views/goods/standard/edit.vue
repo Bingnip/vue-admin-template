@@ -287,6 +287,7 @@ import { getCategoryList, getSpecifyData } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
 import { in_array } from '@/utils/common'
+import { getToken } from '@/utils/auth'
 
 export default {
   components: { Tinymce, ImgUpload },
@@ -327,7 +328,7 @@ export default {
         is_special_offer: false,
         g_discount_rate: '0',
         imgList: [],
-        g_desc: 'test g_desc',
+        g_desc: '',
         g_meta_title: '',
         g_meta_keywords: ''
       },
@@ -447,7 +448,8 @@ export default {
       this.priceStockList = iterator
     },
     fetchData() {
-      getCategoryList().then(response => {
+      var token = getToken()
+      getCategoryList(token).then(response => {
         this.categoryList = response.data.items
       })
 
