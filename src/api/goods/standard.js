@@ -31,3 +31,11 @@ export function checkUrlKey(token, gName) {
     params: { token, gName }
   })
 }
+
+export function submitCreate(token, form) {
+  return request({
+    url: '/goods.php?action=submitStandardCreate',
+    method: 'post',
+    params: { token, form }
+  })
+}

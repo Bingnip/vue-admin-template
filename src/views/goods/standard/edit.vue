@@ -102,15 +102,23 @@
             <el-main v-if="specifyList.length > 0">
               <table v-for="(item, index) in specifyList" :key="item.id" style="width: 80%; margin: 15px; padding: 20px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);border-radius: 4px;">
                 <el-row :gutter="24">
-                  <el-col :span="2">
+                  <el-col :span="3">
                     <el-form-item label="规格名：" />
                   </el-col>
-                  <el-col :span="8"><el-input v-model="item.specifyValue" /></el-col>
+                  <el-col :span="6"><el-input v-model="item.specifyValue" /></el-col>
+                  <el-col :span="2">
+                    <el-form-item label="Key：" />
+                  </el-col>
+                  <el-col :span="4">
+                    <el-select v-model="item.customOptionKey" placeholder="请选择属性标识">
+                      <el-option v-for="(cokItem, cokIndex) in customOptionKeyGourp" :key="cokIndex" :label="cokItem" :value="cokItem" />
+                    </el-select>
+                  </el-col>
                   <el-col :span="2">
                     <el-form-item label="排序：" />
                   </el-col>
                   <el-col :span="2"><el-input v-model="item.order" /></el-col>
-                  <el-col :span="8">
+                  <el-col :span="3">
                     <el-form-item>
                       <el-checkbox :checked="item.imgOpen == 1" @change="addSpecifyImg(index)">添加规格图片</el-checkbox>
                     </el-form-item>
@@ -283,18 +291,16 @@
 </template>
 
 <script>
-import { getCategoryList, getSpecifyData, checkUrlKey } from '@/api/goods/standard'
+import { getCategoryList, getSpecifyData, checkUrlKey, submitCreate } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
 import { in_array } from '@/utils/common'
 import { getToken } from '@/utils/auth'
-import { Loading } from 'element-ui'
 
 export default {
   components: { Tinymce, ImgUpload },
   data() {
     return {
-      value: '',
       editType: 'create',
       type: 'add', // 图片上传的类型
       newSpcifyIndex: 0, // 新增规格临时下标
@@ -306,6 +312,12 @@ export default {
         price: '',
         stock: ''
       },
+      customOptionKeyGourp: [
+        'standard_color',
+        'standard_dimension',
+        'standard_pattern',
+        'standard_styl'
+      ],
       categoryList: null,
       categoryDefaultProps: {
         children: 'children',
@@ -379,15 +391,41 @@ export default {
     }
   },
   methods: {
-    onSubmit() {
+    filterSubmitData() {
       if (this.specifyList.length == 0) {
         this.$message.warning('请输入规格')
+        return
+      } else if (this.imgList.length < 3) {
+        this.$message.warning('产品图不足')
+        return
+      } else if (this.ruleForm.categoryListChecked.length == 0) {
+        this.$message.warning('选择分类')
+        return
+      } else if (this.ruleForm.g_sku.trim() == '') {
+        this.$message.warning('请填写SKU')
+        return
+      } else if (this.ruleForm.g_name.trim() == '') {
+        this.$message.warning('请填写商品名称')
+        return
+      } else if (this.ruleForm.g_alias.trim() == '') {
+        this.$message.warning('请填写URL KEY')
+        return
+      } else if (this.ruleForm.g_add_time.trim() == '') {
+        this.$message.warning('请填写添加时间')
+        return
       }
 
+      return true
+    },
+    onSubmit() {
+      this.filterSubmitData()
       this.ruleForm.specifyList = this.specifyList
       this.ruleForm.priceStockList = this.priceStockList
 
-      console.log(JSON.stringify(this.ruleForm))
+      var token = getToken()
+      submitCreate(token, this.ruleForm).then(response => {
+        console.log(JSON.stringify(response))
+      })
     },
     fetchPriceStockBatch() { // 组装价格库存批处理的数据
       var allOptions = { id: 0, specifyValue: 'All' }
@@ -518,6 +556,7 @@ export default {
       var v = {
         id: this.newSpcifyIndex,
         specifyValue: '',
+        customOptionKey: '',
         order: '',
         imgOpen: 0,
         deleted: 0,
