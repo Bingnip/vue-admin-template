@@ -6,7 +6,7 @@
           <h2 v-if="editType == 'create'">新增商品</h2>
           <h2 v-else>编辑商品</h2>
         </el-col>
-        <el-col :span="6" :offset="12"><el-button type="primary">保存</el-button></el-col>
+        <el-col :span="6" :offset="12"><el-button type="primary" @click="onSubmit()">保存</el-button></el-col>
       </el-row>
     </el-header>
     <el-main>
@@ -22,7 +22,7 @@
             </el-form-item>
             <el-form-item label="商品名称：" prop="g_name">
               <el-col :span="12">
-                <el-input v-model="ruleForm.g_name" />
+                <el-input v-model="ruleForm.g_name" @blur="gnameToUrlkey()" />
               </el-col>
               <el-col :span="12">（该字段为网站前端展示的商品名称，需填写法语)</el-col>
             </el-form-item>
@@ -34,7 +34,7 @@
             </el-form-item>
             <el-form-item label="克重：" prop="g_weight">
               <el-col :span="12">
-                <el-input v-model="ruleForm.g_alias" />
+                <el-input v-model="ruleForm.g_weight" />
               </el-col>
               <el-col :span="12">（需填写单位，例如：300g/㎡）</el-col>
             </el-form-item>
@@ -140,9 +140,9 @@
                       <el-col :span="9" :offset="1"><el-input v-model="row.specifyValue" /></el-col>
                       <el-col :span="3" :offset="1"><el-input v-model="row.order" /></el-col>
                       <el-col v-if="item.imgOpen == 1" :span="5">
-                        <el-upload class="avatar-uploader" action="/goods.php?action=imgUpload" :show-file-list="false" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
-                          <img v-if="row.img" :src="row.img" class="avatar">
-                          <i v-else class="el-icon-plus avatar-uploader-icon" />
+                        <el-upload class="avatar-uploader" :action="uploadUrl" :show-file-list="false" accept=".jpg,.jpeg,.png" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
+                          <img v-if="row.img" :src="row.img" class="avatar" @click="changeUpload(index, rowIndex)">
+                          <i v-else class="el-icon-plus avatar-uploader-icon" @click="changeUpload(index, rowIndex)" />
                         </el-upload>
                       </el-col>
                       <el-col :span="2" :offset="1">
@@ -206,7 +206,7 @@
               </el-col>
               <el-col :span="7">
                 <el-form-item>
-                  <el-input v-model="througnLinePrice" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
+                  <el-input v-model="ruleForm.througnLinePrice" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
                 </el-form-item>
               </el-col>
               <el-col :span="16">
@@ -222,14 +222,14 @@
               <el-col :span="23">
                 <el-form-item>
                   <span v-if="specifyList.length == 0">0</span>
-                  <span v-else>{{ stockCount }}</span>
+                  <span v-else>{{ ruleForm.stockCount }}</span>
                 </el-form-item>
               </el-col>
             </el-row>
           </el-tab-pane>
 
           <el-tab-pane label="分类选择">
-            <el-tree ref="tree" :data="categoryList" show-checkbox default-expand-all node-key="id" highlight-current :props="categoryDefaultProps" />
+            <el-tree ref="tree" :data="categoryList" show-checkbox default-expand-all node-key="id" highlight-current :props="categoryDefaultProps" @check="handleCurrentChecked" />
           </el-tab-pane>
 
           <el-tab-pane label="内容信息">
@@ -266,7 +266,7 @@
               </el-col>
             </el-form-item>
             <el-form-item>
-              <el-table :data="gidRefList" stripe style="width: 60%">
+              <el-table :data="ruleForm.gidRefList" stripe style="width: 60%">
                 <el-table-column prop="gid" label="商品ID" width="100" />
                 <el-table-column label="操作" width="70">
                   <el-button type="danger" size="mini">删除</el-button>
@@ -283,11 +283,12 @@
 </template>
 
 <script>
-import { getCategoryList, getSpecifyData } from '@/api/goods/standard'
+import { getCategoryList, getSpecifyData, checkUrlKey } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
 import { in_array } from '@/utils/common'
 import { getToken } from '@/utils/auth'
+import { Loading } from 'element-ui'
 
 export default {
   components: { Tinymce, ImgUpload },
@@ -305,17 +306,21 @@ export default {
         price: '',
         stock: ''
       },
-      stockCount: 0, // 库存总计
-      througnLinePrice: 0, // 划线价
-      gidRefList: [],
       categoryList: null,
       categoryDefaultProps: {
         children: 'children',
         label: 'name'
       },
+      tempImgIndex: { // 规格中图片的下标
+        index: 0,
+        rowIndex: 0
+      },
+      uploadUrl: '/goods.php?action=imgUpload',
+      cdnPrefix: '//du7nt18x31vr8.cloudfront.net/assets/images/product/',
       labelPosition: 'right',
       tabPosition: 'left',
       ruleForm: {
+        seriesType: 'new_standard',
         g_sku: '',
         g_name: '',
         g_alias: '',
@@ -327,10 +332,19 @@ export default {
         g_hot: false,
         is_special_offer: false,
         g_discount_rate: '0',
+        g_add_time: '',
+        g_discount_start_time: '',
+        g_discount_end_time: '',
         imgList: [],
         g_desc: '',
         g_meta_title: '',
-        g_meta_keywords: ''
+        categoryListChecked: [], // 被选中的分类
+        g_meta_keywords: '',
+        stockCount: 0, // 库存总计
+        througnLinePrice: 0, // 划线价
+        gidRefList: [],
+        priceStockList: [],
+        specifyList: []
       },
       rules: {
         g_sku: [
@@ -341,6 +355,9 @@ export default {
         ],
         g_alias: [
           { required: true, message: '请输入URL KEY', trigger: 'blur' }
+        ],
+        g_add_time: [
+          { required: true, message: '请输入添加时间', trigger: 'blur' }
         ]
       }
     }
@@ -353,13 +370,25 @@ export default {
       this.fetchPriceStockBatch()
     }
 
-    this.type = this.$route.query.type || 'add'
+    var token = getToken()
+    this.uploadUrl = this.uploadUrl + '&token=' + token
 
+    this.type = this.$route.query.type || 'add'
     if (this.type === 'edit') {
       this.getDetail()
     }
   },
   methods: {
+    onSubmit() {
+      if (this.specifyList.length == 0) {
+        this.$message.warning('请输入规格')
+      }
+
+      this.ruleForm.specifyList = this.specifyList
+      this.ruleForm.priceStockList = this.priceStockList
+
+      console.log(JSON.stringify(this.ruleForm))
+    },
     fetchPriceStockBatch() { // 组装价格库存批处理的数据
       var allOptions = { id: 0, specifyValue: 'All' }
 
@@ -504,6 +533,24 @@ export default {
       this.fetchPriceStockBatch()
       this.countAllStock()
     },
+    gnameToUrlkey() { // 商品名复制到url-key
+      var gName = this.ruleForm.g_name.trim()
+      if (gName != '') {
+        var token = getToken()
+        checkUrlKey(token, gName).then(response => {
+          this.ruleForm.g_alias = response.data.url
+        })
+      }
+    },
+    handleCurrentChecked(nodeObj, selectedObj) { // 获取分类树点击
+      var checked = []
+      if (selectedObj.checkedNodes) {
+        selectedObj.checkedNodes.forEach(e => {
+          checked.push(e.c_id)
+        })
+      }
+      this.ruleForm.categoryListChecked = checked
+    },
     renderPriceStockBatchTable() { // 生成批量修改的那些数据
       var specify = []
 
@@ -551,8 +598,19 @@ export default {
       })
       this.specifyList[index].children[rowIndex].default = 1
     },
-    handleAvatarSuccess(res, file) {
-      this.imageUrl = URL.createObjectURL(file.raw)
+    handleAvatarSuccess(res) {
+      if (!res.code) {
+        var index = this.tempImgIndex.index
+        var rowIndex = this.tempImgIndex.rowIndex
+        var img = this.cdnPrefix + res.result.filename
+        this.specifyList[index].children[rowIndex].img = img
+      } else {
+        this.$message.error(res.msg)
+      }
+    },
+    changeUpload(index, rowIndex) {
+      this.tempImgIndex.index = index
+      this.tempImgIndex.rowIndex = rowIndex
     },
     beforeAvatarUpload(file) {
       const isJPG = file.type === 'image/jpeg' || file.type === 'image/png'
@@ -564,6 +622,7 @@ export default {
       if (!isLt2M) {
         this.$message.error('上传头像图片大小不能超过 2MB!')
       }
+
       return isJPG && isLt2M
     },
     buildePriceStockList() { // 重置价格表
@@ -738,7 +797,7 @@ export default {
         priceStockList.forEach(e => {
           stockCount += parseInt(e.stock)
         })
-        this.stockCount = stockCount
+        this.ruleForm.stockCount = stockCount
       }
     },
     resetStockInput(index) { // 库存input空的话改0

@@ -23,7 +23,7 @@
         class="draggable-item"
         :style="{ width: width + 'px', height: height + 'px' }"
       >
-        <el-image :src="item" :preview-src-list="[item]" />
+        <el-image :src="cdnPrefix + item" :preview-src-list="[item]" />
         <div class="shadow" @click="onRemoveHandler(index)">
           <i class="el-icon-delete" :name="index" />
         </div>
@@ -115,7 +115,8 @@ export default {
       headers: {},
       isUploading: false, // 正在上传状态
       isFirstMount: true, // 控制防止重复回显
-      uploadUrl: '/goods.php?action=imgUpload'
+      uploadUrl: '/goods.php?action=imgUpload',
+      cdnPrefix: '//du7nt18x31vr8.cloudfront.net/assets/images/product/'
       // uploadUrl: 'https://httpbin.org/post'
     }
   },
@@ -205,7 +206,7 @@ export default {
     onSuccessUpload(res, file, fileList) {
       if (!res.error && res.result) {
         if (this.imgList.length < this.limit) {
-          this.imgList.push(res.result.link)
+          this.imgList.push(res.result.filename)
         }
       } else {
         this.syncElUpload()

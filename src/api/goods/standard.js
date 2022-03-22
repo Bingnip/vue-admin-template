@@ -23,3 +23,11 @@ export function getSpecifyData(token) {
     params: { token }
   })
 }
+
+export function checkUrlKey(token, gName) {
+  return request({
+    url: '/goods.php?action=checkUrlKey',
+    method: 'post',
+    params: { token, gName }
+  })
+}
