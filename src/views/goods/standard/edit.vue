@@ -28,7 +28,7 @@
             </el-form-item>
             <el-form-item label="URL KEY：" prop="g_alias">
               <el-col :span="12">
-                <el-input v-model="ruleForm.g_alias" />
+                <el-input v-model="ruleForm.g_alias" disabled />
               </el-col>
               <el-col :span="12"><el-button type="primary" size="small">修改</el-button></el-col>
             </el-form-item>
@@ -102,10 +102,10 @@
             <el-main v-if="specifyList.length > 0">
               <table v-for="(item, index) in specifyList" :key="item.id" style="width: 80%; margin: 15px; padding: 20px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);border-radius: 4px;">
                 <el-row :gutter="24">
-                  <el-col :span="3">
+                  <el-col :span="2">
                     <el-form-item label="规格名：" />
                   </el-col>
-                  <el-col :span="6"><el-input v-model="item.specifyValue" /></el-col>
+                  <el-col :span="5"><el-input v-model="item.specifyValue" /></el-col>
                   <el-col :span="2">
                     <el-form-item label="Key：" />
                   </el-col>
@@ -118,7 +118,7 @@
                     <el-form-item label="排序：" />
                   </el-col>
                   <el-col :span="2"><el-input v-model="item.order" /></el-col>
-                  <el-col :span="3">
+                  <el-col :span="5">
                     <el-form-item>
                       <el-checkbox :checked="item.imgOpen == 1" @change="addSpecifyImg(index)">添加规格图片</el-checkbox>
                     </el-form-item>
@@ -291,7 +291,7 @@
 </template>
 
 <script>
-import { getCategoryList, getSpecifyData, checkUrlKey, submitCreate } from '@/api/goods/standard'
+import { getCategoryList, checkUrlKey, submitCreate, getGoodsInfo } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
 import { in_array } from '@/utils/common'
@@ -301,8 +301,8 @@ export default {
   components: { Tinymce, ImgUpload },
   data() {
     return {
+      gid: 0,
       editType: 'create',
-      type: 'add', // 图片上传的类型
       newSpcifyIndex: 0, // 新增规格临时下标
       newSpcifyValueIndex: 10, // 新增规格值的临时下标
       priceStockList: [],
@@ -316,7 +316,7 @@ export default {
         'standard_color',
         'standard_dimension',
         'standard_pattern',
-        'standard_styl'
+        'standard_style'
       ],
       categoryList: null,
       categoryDefaultProps: {
@@ -350,8 +350,8 @@ export default {
         imgList: [],
         g_desc: '',
         g_meta_title: '',
-        categoryListChecked: [], // 被选中的分类
         g_meta_keywords: '',
+        categoryListChecked: [], // 被选中的分类
         stockCount: 0, // 库存总计
         througnLinePrice: 0, // 划线价
         gidRefList: [],
@@ -375,6 +375,7 @@ export default {
     }
   },
   created() {
+    this.editTypeCheck()
     this.fetchData()
 
     if (this.specifyList.length > 0) {
@@ -385,46 +386,84 @@ export default {
     var token = getToken()
     this.uploadUrl = this.uploadUrl + '&token=' + token
 
-    this.type = this.$route.query.type || 'add'
-    if (this.type === 'edit') {
-      this.getDetail()
+    if (this.editType == 'edit') {
+      this.getImgDetail()
     }
   },
   methods: {
+    getGoodsInfo() { // 如果是编辑就获取商品信息
+      var token = getToken()
+      getGoodsInfo(token, this.gid).then(response => {
+        var ret = response.data
+        var goodsInfo = ret.goodsInfo
+        // var categoryInfo = ret.categoryInfo
+        this.specifyList = ret.attrInfo
+        this.priceStockList = ret.priceStockInfo
+        // var refInfo = ret.refInfox
+        console.log(JSON.stringify(this.priceStockList))
+
+        this.ruleForm.g_sku = goodsInfo.g_sku
+        this.ruleForm.g_name = goodsInfo.g_name
+        this.ruleForm.g_alias = goodsInfo.g_alias
+        this.ruleForm.g_weight = goodsInfo.g_weight
+        this.ruleForm.g_status = goodsInfo.g_status
+        this.ruleForm.g_order = goodsInfo.g_order
+        this.ruleForm.g_recommended = goodsInfo.g_recommended
+        this.ruleForm.g_new = goodsInfo.g_new
+        this.ruleForm.g_hot = goodsInfo.g_hot
+        this.ruleForm.is_special_offer = goodsInfo.is_special_offer
+        this.ruleForm.g_discount_rate = goodsInfo.g_discount_rate
+        this.ruleForm.g_desc = goodsInfo.g_desc
+        this.ruleForm.g_meta_title = goodsInfo.g_meta_title
+        this.ruleForm.g_meta_keywords = goodsInfo.g_meta_keywords
+      })
+    },
+    editTypeCheck() { // 判断是编辑还是新增
+      var reg = /\d/
+      var pattern = new RegExp(reg)
+      if (pattern.test(this.$route.params.id)) {
+        this.gid = this.$route.params.id
+        this.editType = 'edit'
+        this.getGoodsInfo()
+      }
+    },
     filterSubmitData() {
       if (this.specifyList.length == 0) {
         this.$message.warning('请输入规格')
-        return
-      } else if (this.imgList.length < 3) {
+        return false
+      } else if (this.ruleForm.imgList.length < 3) {
         this.$message.warning('产品图不足')
-        return
+        return false
       } else if (this.ruleForm.categoryListChecked.length == 0) {
         this.$message.warning('选择分类')
-        return
+        return false
       } else if (this.ruleForm.g_sku.trim() == '') {
         this.$message.warning('请填写SKU')
-        return
+        return false
       } else if (this.ruleForm.g_name.trim() == '') {
         this.$message.warning('请填写商品名称')
-        return
+        return false
       } else if (this.ruleForm.g_alias.trim() == '') {
         this.$message.warning('请填写URL KEY')
-        return
-      } else if (this.ruleForm.g_add_time.trim() == '') {
+        return false
+      } else if (this.ruleForm.g_add_time == '') {
         this.$message.warning('请填写添加时间')
-        return
+        return false
       }
 
       return true
     },
     onSubmit() {
-      this.filterSubmitData()
+      if (!this.filterSubmitData()) {
+        return false
+      }
       this.ruleForm.specifyList = this.specifyList
       this.ruleForm.priceStockList = this.priceStockList
 
       var token = getToken()
       submitCreate(token, this.ruleForm).then(response => {
-        console.log(JSON.stringify(response))
+        this.$message.success(response.data)
+        this.$router.go(0)
       })
     },
     fetchPriceStockBatch() { // 组装价格库存批处理的数据
@@ -519,12 +558,6 @@ export default {
       getCategoryList(token).then(response => {
         this.categoryList = response.data.items
       })
-
-      if (this.editType == 'edit') {
-        getSpecifyData().then(response => {
-          this.specifyList = response.data
-        })
-      }
     },
     prevent(e) {
       var keynum = window.event ? e.keyCode : e.which // 获取键盘码
@@ -534,13 +567,13 @@ export default {
         e.target.value = ''
       }
     },
-    getDetail() {
-      setTimeout(() => {
-        const res = {
-          imgList: ['https://abc.png']
-        }
-        this.formData = res
-      }, 1000)
+    getImgDetail() {
+      // setTimeout(() => {
+      //   const res = {
+      //     imgList: ['https://abc.png']
+      //   }
+      //   this.formData = res
+      // }, 1000)
     },
     addSpecify() { // 添加规格项目
       if (this.specifyList.length >= 3) {
@@ -581,11 +614,13 @@ export default {
         })
       }
     },
-    handleCurrentChecked(nodeObj, selectedObj) { // 获取分类树点击
+    handleCurrentChecked(nodeObj, selectedObj, a, b) { // 获取分类树点击
       var checked = []
       if (selectedObj.checkedNodes) {
         selectedObj.checkedNodes.forEach(e => {
-          checked.push(e.c_id)
+          if (e.c_id) {
+            checked.push(e.c_id)
+          }
         })
       }
       this.ruleForm.categoryListChecked = checked

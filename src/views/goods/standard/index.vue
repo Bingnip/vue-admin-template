@@ -5,15 +5,7 @@
         <el-button type="primary">新增</el-button>
       </el-header>
       <el-main>
-        <el-table
-          v-loading="listLoading"
-          :data="list"
-          element-loading-text="Loading"
-          height="780"
-          border
-          fit
-          highlight-current-row
-        >
+        <el-table v-loading="listLoading" :data="list" element-loading-text="Loading" height="780" border fit highlight-current-row>
           <el-table-column fixed="left" align="center" label="商品ID" width="95">
             <template slot-scope="scope">
               {{ scope.row.g_id }}
@@ -96,10 +88,10 @@
             </template>
           </el-table-column>
           <el-table-column fixed="right" label="操作" width="120" align="center">
-            <el-button size="mini" type="primary" plain>编辑</el-button>
-            <el-button size="mini" type="warning" plain>复制</el-button>
-            <el-button size="mini" type="danger" plain>删除</el-button>
-            <el-button size="mini" type="info" plain>日志</el-button>
+            <template slot-scope="{row}">
+              <el-button type="primary" icon="el-icon-edit" circle size="mini" @click="edit(row.g_id)" />
+              <el-button type="danger" icon="el-icon-delete" circle size="mini" />
+            </template>
           </el-table-column>
         </el-table>
       </el-main>
@@ -110,6 +102,7 @@
 <script>
 import { getList } from '@/api/goods/standard'
 import { parseTime } from '@/utils'
+import { getToken } from '@/utils/auth'
 
 export default {
   name: 'StandardGoods',
@@ -128,10 +121,14 @@ export default {
   methods: {
     fetchData() {
       this.listLoading = true
-      getList().then(response => {
+      var token = getToken()
+      getList(token).then(response => {
         this.list = response.data.items
         this.listLoading = false
       })
+    },
+    edit(id) {
+      this.$router.push(`standard_goods_edit/${id}`)
     }
   }
 }

@@ -18,6 +18,7 @@ service.interceptors.request.use(
 
     if (config.method === 'post') {
       config.data = qs.stringify(config.data)
+      config.headers['Content-Type'] = 'application/x-www-form-urlencoded'
     }
 
     if (store.getters.token) {

@@ -63,16 +63,10 @@ export const constantRoutes = [
     meta: { title: '产品', icon: 'nested' },
     children: [
       {
-        path: 'standard_goods_edit',
+        path: 'standard_goods_edit/:id',
         name: 'standard_goods_edit',
         component: () => import('@/views/goods/standard/edit'),
-        meta: { title: '新增标品', icon: 'el-icon-notebook-2' }
-      },
-      {
-        path: 'all_goods',
-        name: 'all_goods',
-        component: () => import('@/views/goods/all/index'),
-        meta: { title: '商品管理', icon: 'el-icon-notebook-1' }
+        meta: { title: '新增/编辑 标品', icon: 'el-icon-notebook-2' }
       },
       {
         path: 'standard_goods',

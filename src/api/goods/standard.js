@@ -16,14 +16,6 @@ export function getCategoryList(token) {
   })
 }
 
-export function getSpecifyData(token) {
-  return request({
-    url: 'https://www.fastmock.site/mock/2971170e7da934619bdc8517bbda52f9/nf_sale_admin/goods/getCategory',
-    method: 'post',
-    params: { token }
-  })
-}
-
 export function checkUrlKey(token, gName) {
   return request({
     url: '/goods.php?action=checkUrlKey',
@@ -36,6 +28,16 @@ export function submitCreate(token, form) {
   return request({
     url: '/goods.php?action=submitStandardCreate',
     method: 'post',
-    params: { token, form }
+    params: { token },
+    data: { form }
   })
 }
+
+export function getGoodsInfo(token, gid) {
+  return request({
+    url: '/goods.php?action=getGoodsInfo',
+    method: 'post',
+    params: { token, gid }
+  })
+}
+
