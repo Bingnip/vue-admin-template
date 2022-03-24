@@ -62,6 +62,7 @@
 </template>
 
 <script>
+import { removeStandardImg } from '@/api/goods/standard'
 import vuedraggable from 'vuedraggable' // 一款vue拖拽插件
 import lrz from 'lrz' // 一款图片压缩插件
 import utils from '@/utils/img-upload'
@@ -113,12 +114,13 @@ export default {
 
   data() {
     return {
+      loading: null,
+      token: null,
       headers: {},
       isUploading: false, // 正在上传状态
       isFirstMount: true, // 控制防止重复回显
       uploadUrl: '/goods.php?action=imgUpload',
-      cdnPrefix: '//du7nt18x31vr8.cloudfront.net/assets/images/product/',
-      loading: null
+      cdnPrefix: '//du7nt18x31vr8.cloudfront.net/assets/images/product/'
     }
   },
 
@@ -159,8 +161,8 @@ export default {
       this.syncElUpload()
     }
 
-    var token = getToken()
-    this.uploadUrl = this.uploadUrl + '&token=' + token
+    this.token = getToken()
+    this.uploadUrl = this.uploadUrl + '&token=' + this.token
   },
 
   methods: {
@@ -218,9 +220,6 @@ export default {
         target: document.querySelector('.img-upload-pane')// loadin覆盖的dom元素节点
       })
     },
-    onLoadingClose() {
-      this.loading.close()
-    },
     // 上传完单张图片
     onSuccessUpload(res, file, fileList) {
       if (!res.error && res.result) {
@@ -233,7 +232,7 @@ export default {
       }
 
       this.isUploading = false
-      this.onLoadingClose()
+      this.loading.close()
     },
     // 移除单张图片
     onRemoveHandler(index) {
@@ -243,8 +242,10 @@ export default {
         type: 'warning'
       })
         .then(() => {
-          this.imgList = this.imgList.filter((v, i) => {
-            return i !== index
+          removeStandardImg(this.token, this.imgList[index].gi_id).then(() => {
+            this.imgList = this.imgList.filter((v, i) => {
+              return i !== index
+            })
           })
         })
         .catch(() => {})

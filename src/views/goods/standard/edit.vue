@@ -28,9 +28,9 @@
             </el-form-item>
             <el-form-item label="URL KEY：" prop="g_alias">
               <el-col :span="12">
-                <el-input v-model="ruleForm.g_alias" disabled />
+                <el-input v-model="ruleForm.g_alias" readonly />
               </el-col>
-              <el-col :span="12"><el-button type="primary" size="small">修改</el-button></el-col>
+              <el-col :span="12"><el-button v-if="ruleForm.g_alias != '' && editType == 'edit'" type="primary" size="small" @click="editUrlKey()">修改</el-button></el-col>
             </el-form-item>
             <el-form-item label="克重：" prop="g_weight">
               <el-col :span="12">
@@ -38,11 +38,11 @@
               </el-col>
               <el-col :span="12">（需填写单位，例如：300g/㎡）</el-col>
             </el-form-item>
-            <el-form-item label="重定向URL：" prop="g_url">
+            <el-form-item v-if="ruleForm.g_alias != '' && editType == 'edit'" label="重定向URL：" prop="g_url">
               <el-col :span="12">
-                <el-input v-model="ruleForm.g_url" />
+                <el-input v-model="ruleForm.g_alias" disabled />
               </el-col>
-              <el-col :span="12"><el-button type="danger" size="small">301重定向设置</el-button></el-col>
+              <el-col :span="12"><el-button type="danger" size="small" @click="setRedirect()">301重定向设置</el-button></el-col>
             </el-form-item>
             <el-form-item label="状态：" prop="g_status">
               <el-radio v-model="ruleForm.g_status" label="1">上架中</el-radio>
@@ -149,7 +149,7 @@
                       <el-col :span="3" :offset="1"><el-input v-model="row.order" /></el-col>
                       <el-col v-if="item.imgOpen == 1" :span="5">
                         <el-upload class="avatar-uploader" :action="uploadUrl" :show-file-list="false" accept=".jpg,.jpeg,.png" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
-                          <img v-if="row.img" :src="row.img" class="avatar" @click="changeUpload(index, rowIndex)">
+                          <img v-if="row.img" :src="cdnPrefix + row.img" class="avatar" @click="changeUpload(index, rowIndex)">
                           <i v-else class="el-icon-plus avatar-uploader-icon" @click="changeUpload(index, rowIndex)" />
                         </el-upload>
                       </el-col>
@@ -214,7 +214,7 @@
               </el-col>
               <el-col :span="7">
                 <el-form-item>
-                  <el-input v-model="ruleForm.througnLinePrice" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
+                  <el-input v-model="ruleForm.throughLinePrice" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
                 </el-form-item>
               </el-col>
               <el-col :span="16">
@@ -251,7 +251,7 @@
                 <el-input v-model="ruleForm.g_meta_title" type="textarea" prop="g_meta_title" />
               </el-col>
               <el-col :span="12">
-                <el-button type="primary" size="small">填充商品名称</el-button>
+                <el-button type="primary" size="small" @click="fillMetaTitle()">填充商品名称</el-button>
               </el-col>
             </el-form-item>
             <el-form-item label="META关键词：">
@@ -259,7 +259,7 @@
                 <el-input v-model="ruleForm.g_meta_keywords" type="textarea" prop="g_meta_keywords" />
               </el-col>
               <el-col :span="12">
-                <el-button type="primary" size="small">填充商品名称</el-button>
+                <el-button type="primary" size="small" @click="fillMetaKeywords()">填充商品分类信息</el-button>
               </el-col>
             </el-form-item>
           </el-tab-pane>
@@ -291,18 +291,23 @@
 </template>
 
 <script>
-import { getCategoryList, checkUrlKey, submitCreate, getGoodsInfo, getStandardImg } from '@/api/goods/standard'
+import { getCategoryList, checkUrlKey, submitCreateOrEdit, getGoodsInfo, getStandardImg, editAlias, getAlias, setRedirectUrl } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
 import { in_array, createdTimeFormat } from '@/utils'
 import { getToken } from '@/utils/auth'
+import { Loading } from 'element-ui'
 
 export default {
   components: { Tinymce, ImgUpload },
   data() {
     return {
+      loading: null,
       token: null,
-      gid: 0,
+      editRedirect: { // 临时的变
+        redirectId: null,
+        redirectUrl: null
+      },
       editType: 'create',
       newSpcifyIndex: 0, // 新增规格临时下标
       newSpcifyValueIndex: 10, // 新增规格值的临时下标
@@ -330,6 +335,7 @@ export default {
       tabPosition: 'left',
       ruleForm: {
         seriesType: 'new_standard',
+        gid: 0,
         g_sku: '',
         g_name: '',
         g_alias: '',
@@ -350,7 +356,7 @@ export default {
         g_meta_keywords: '',
         categoryListChecked: [], // 被选中的分类
         stockCount: 0, // 库存总计
-        througnLinePrice: 0, // 划线价
+        throughLinePrice: 0, // 划线价
         gidRefList: [],
         priceStockList: [],
         specifyList: []
@@ -383,7 +389,7 @@ export default {
   },
   methods: {
     getGoodsInfo() { // 如果是编辑就获取商品信息
-      getGoodsInfo(this.token, this.gid).then(response => {
+      getGoodsInfo(this.token, this.ruleForm.gid).then(response => {
         var ret = response.data
         var goodsInfo = ret.goodsInfo
 
@@ -418,22 +424,13 @@ export default {
       var reg = /\d/
       var pattern = new RegExp(reg)
       if (pattern.test(this.$route.params.id)) {
-        this.gid = this.$route.params.id
+        this.ruleForm.gid = this.$route.params.id
         this.editType = 'edit'
         this.getGoodsInfo()
       }
     },
     filterSubmitData() {
-      if (this.specifyList.length == 0) {
-        this.$message.warning('请输入规格')
-        return false
-      } else if (this.ruleForm.imgList.length < 3) {
-        this.$message.warning('产品图不足')
-        return false
-      } else if (this.ruleForm.categoryListChecked.length == 0) {
-        this.$message.warning('选择分类')
-        return false
-      } else if (this.ruleForm.g_sku.trim() == '') {
+      if (this.ruleForm.g_sku.trim() == '') {
         this.$message.warning('请填写SKU')
         return false
       } else if (this.ruleForm.g_name.trim() == '') {
@@ -444,6 +441,15 @@ export default {
         return false
       } else if (this.ruleForm.g_add_time == '') {
         this.$message.warning('请填写添加时间')
+        return false
+      } else if (this.ruleForm.imgList.length < 3) {
+        this.$message.warning('产品图不足')
+        return false
+      } else if (this.specifyList.length == 0) {
+        this.$message.warning('请输入规格')
+        return false
+      } else if (this.ruleForm.categoryListChecked.length == 0) {
+        this.$message.warning('选择分类')
         return false
       }
 
@@ -456,7 +462,7 @@ export default {
       this.ruleForm.specifyList = this.specifyList
       this.ruleForm.priceStockList = this.priceStockList
 
-      submitCreate(this.token, this.ruleForm).then(response => {
+      submitCreateOrEdit(this.token, this.ruleForm, this.editType).then(response => {
         this.$message.success(response.data)
       })
     },
@@ -565,7 +571,7 @@ export default {
       }
     },
     getImgDetail() {
-      getStandardImg(this.token, this.gid).then(res => {
+      getStandardImg(this.token, this.ruleForm.gid).then(res => {
         res.data.forEach(e => {
           this.ruleForm.imgList.push(e)
         })
@@ -672,7 +678,7 @@ export default {
       if (!res.code) {
         var index = this.tempImgIndex.index
         var rowIndex = this.tempImgIndex.rowIndex
-        var img = this.cdnPrefix + res.result.filename
+        var img = res.result.obj.gi_img
         this.specifyList[index].children[rowIndex].img = img
       } else {
         this.$message.error(res.msg)
@@ -879,6 +885,81 @@ export default {
       list.forEach(e => {
         this.ruleForm.categoryListChecked.push(e.c_id)
       })
+    },
+    editUrlKey() { // 修改url-key
+      this.$prompt(' 原url key:   ' + this.ruleForm.g_alias, '修改 URL KEY', {
+      }).then(({ value }) => {
+        if (!value) {
+          this.$message.warning('请输入新的url key')
+          return
+        }
+
+        if (value.trim() == this.ruleForm.g_alias.trim()) {
+          this.$message.warning('输入一致，请重输')
+          return
+        }
+
+        editAlias(this.token, value, this.ruleForm.gid).then(response => {
+          if (response.data.code != 200) {
+            this.$message.warning(response.data.msg)
+            return
+          }
+
+          this.ruleForm.g_alias = value
+          this.$message.success(response.data.msg)
+        })
+      })
+    },
+    getRedirect() { // 获取有效值
+      this.loading = Loading.service({
+        text: '获取中...',
+        spinner: 'el-icon-loading',
+        background: 'rgba(0, 0, 0, 0.2)'
+      })
+
+      getAlias(this.token, this.ruleForm.gid).then(response => {
+        this.editRedirect.redirectId = response.data.r_id
+        this.editRedirect.redirectUrl = response.data.redirect
+      })
+
+      this.loading.close()
+    },
+    setRedirect() { // 修改301重定向
+      this.getRedirect()
+      this.$prompt(' request_path:   ' + this.ruleForm.g_alias, '301重定向', {
+      }).then(({ value }) => {
+        if (!value) {
+          this.$message.warning('请输入 target_path')
+          return
+        }
+
+        if (value.trim() == this.editRedirect.redirectUrl.trim()) {
+          this.$message.warning('输入一致，请重输')
+          return
+        }
+
+        setRedirectUrl(this.token, value, this.editRedirect.redirectId).then(response => {
+          this.ruleForm.g_alias = value
+          this.$message.success(response.data.msg)
+        })
+      })
+    },
+    fillMetaTitle() {
+      this.ruleForm.g_meta_title = this.ruleForm.g_name
+    },
+    fillMetaKeywords() {
+      var cateIdArr = this.ruleForm.categoryListChecked
+      var cateInfo = ''
+
+      this.categoryList.forEach(e => {
+        e.children.forEach(el => {
+          if (in_array(el.c_id, cateIdArr)) {
+            cateInfo += el.name + ','
+          }
+        })
+      })
+
+      this.ruleForm.g_meta_keywords = cateInfo.substring(0, cateInfo.length - 1)
     }
   }
 }

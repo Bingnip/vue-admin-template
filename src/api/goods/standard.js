@@ -24,13 +24,23 @@ export function checkUrlKey(token, gName) {
   })
 }
 
-export function submitCreate(token, form) {
-  return request({
-    url: '/goods.php?action=submitStandardCreate',
-    method: 'post',
-    params: { token },
-    data: { form }
-  })
+export function submitCreateOrEdit(token, form, editType) {
+  switch (editType) {
+    case 'edit':
+      return request({
+        url: '/goods.php?action=submitStandardEdit',
+        method: 'post',
+        params: { token },
+        data: { form }
+      })
+    case 'create':
+      return request({
+        url: '/goods.php?action=submitStandardCreate',
+        method: 'post',
+        params: { token },
+        data: { form }
+      })
+  }
 }
 
 export function getGoodsInfo(token, gid) {
@@ -48,3 +58,36 @@ export function getStandardImg(token, gid) {
     params: { token, gid }
   })
 }
+
+export function editAlias(token, urlKey, gid) {
+  return request({
+    url: '/goods.php?action=editUrlKey',
+    method: 'post',
+    params: { token, urlKey, gid }
+  })
+}
+
+export function getAlias(token, gid) {
+  return request({
+    url: '/goods.php?action=getUrlKey',
+    method: 'post',
+    params: { token, gid }
+  })
+}
+
+export function setRedirectUrl(token, targetPath, rid) {
+  return request({
+    url: '/goods.php?action=setUrlKey',
+    method: 'post',
+    params: { token, targetPath, rid }
+  })
+}
+
+export function removeStandardImg(token, imgId) {
+  return request({
+    url: '/goods.php?action=removeStandardImg',
+    method: 'post',
+    params: { token, imgId }
+  })
+}
+
