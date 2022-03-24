@@ -2,7 +2,7 @@
   <div class="app-container">
     <el-container>
       <el-header>
-        <el-button type="primary">新增</el-button>
+        <el-button type="primary" @click="createGoods()">新增</el-button>
       </el-header>
       <el-main>
         <el-table v-loading="listLoading" :data="list" element-loading-text="Loading" height="780" border fit highlight-current-row>
@@ -129,6 +129,9 @@ export default {
     },
     edit(id) {
       this.$router.push(`standard_goods_edit/${id}`)
+    },
+    createGoods() {
+      this.$router.push(`standard_goods_edit`)
     }
   }
 }

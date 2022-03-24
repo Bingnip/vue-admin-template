@@ -115,3 +115,31 @@ export function param2Obj(url) {
   })
   return obj
 }
+
+export function createdTimeFormat(timestamp, type = 'datetime') {
+  const date = new Date(timestamp * 1000)
+  const Y = date.getFullYear()
+  let M = date.getMonth() + 1
+  M = (M < 10 ? '0' + M : M)
+  const D = (date.getDate() < 10 ? '0' + date.getDate() : date.getDate())
+  const h = (date.getHours() < 10 ? '0' + date.getHours() : date.getHours())
+  const m = (date.getMinutes() < 10 ? '0' + date.getMinutes() : date.getMinutes())
+  const s = (date.getSeconds() < 10 ? '0' + date.getSeconds() : date.getSeconds())
+
+  if (type == 'date') {
+    return Y + '-' + M + '-' + D
+  }
+  return Y + '-' + M + '-' + D + ' ' + h + ':' + m + ':' + s
+}
+
+export function in_array(stringToSearch, arrayToSearch) {
+  var thisEntry = ''
+
+  for (let s = 0; s < arrayToSearch.length; s++) {
+    thisEntry = arrayToSearch[s].toString()
+    if (thisEntry == stringToSearch) {
+      return true
+    }
+  }
+  return false
+}

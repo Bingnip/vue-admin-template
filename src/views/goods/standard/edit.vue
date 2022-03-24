@@ -60,21 +60,21 @@
               <el-checkbox v-model="ruleForm.g_hot">热门</el-checkbox>
               <el-checkbox v-model="ruleForm.is_special_offer">特价</el-checkbox>
             </el-form-item>
-            <el-form-item label="促销倒计时：" prop="g_discount_rate">
+            <el-form-item label="促销倒计时：" prop="g_under_discount">
               <el-col :span="3">
-                <el-radio v-model="ruleForm.g_discount_rate" label="0">关闭</el-radio>
-                <el-radio v-model="ruleForm.g_discount_rate" label="1">开启</el-radio>
+                <el-radio v-model="ruleForm.g_under_discount" label="0">关闭</el-radio>
+                <el-radio v-model="ruleForm.g_under_discount" label="1">开启</el-radio>
               </el-col>
-              <div v-if="ruleForm.g_discount_rate == '1'">
+              <div v-if="ruleForm.g_under_discount == '1'">
                 <el-col :span="5">
                   <el-form-item prop="g_discount_start_time">
-                    <el-date-picker v-model="ruleForm.g_discount_start_time" type="datetime" placeholder="开始日期" style="width: 100%;" />
+                    <el-date-picker v-model="ruleForm.g_discount_start_time" type="datetime" placeholder="开始日期" style="width: 100%;" value-format="timestamp" />
                   </el-form-item>
                 </el-col>
                 <el-col class="line" :span="1" :offset="1">~</el-col>
                 <el-col :span="5">
                   <el-form-item prop="g_discount_end_time">
-                    <el-date-picker v-model="ruleForm.g_discount_end_time" type="datetime" placeholder="结束时间" style="width: 100%;" />
+                    <el-date-picker v-model="ruleForm.g_discount_end_time" type="datetime" placeholder="结束时间" style="width: 100%;" value-format="timestamp" />
                   </el-form-item>
                 </el-col>
               </div>
@@ -89,7 +89,7 @@
             </el-form-item>
           </el-tab-pane>
 
-          <el-tab-pane label="商品图片">
+          <el-tab-pane label="商品图片" class="img-upload-pane">
             <el-form-item label="上传图片：" prop="imgList">
               <el-col :span="20">
                 <ImgUpload v-model="ruleForm.imgList" />
@@ -237,7 +237,7 @@
           </el-tab-pane>
 
           <el-tab-pane label="分类选择">
-            <el-tree ref="tree" :data="categoryList" show-checkbox default-expand-all node-key="id" highlight-current :props="categoryDefaultProps" @check="handleCurrentChecked" />
+            <el-tree ref="tree" :data="categoryList" show-checkbox default-expand-all node-key="c_id" highlight-current :props="categoryDefaultProps" :default-checked-keys="ruleForm.categoryListChecked" @check="handleCurrentChecked" />
           </el-tab-pane>
 
           <el-tab-pane label="内容信息">
@@ -291,27 +291,24 @@
 </template>
 
 <script>
-import { getCategoryList, checkUrlKey, submitCreate, getGoodsInfo } from '@/api/goods/standard'
+import { getCategoryList, checkUrlKey, submitCreate, getGoodsInfo, getStandardImg } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
-import { in_array } from '@/utils/common'
+import { in_array, createdTimeFormat } from '@/utils'
 import { getToken } from '@/utils/auth'
 
 export default {
   components: { Tinymce, ImgUpload },
   data() {
     return {
+      token: null,
       gid: 0,
       editType: 'create',
       newSpcifyIndex: 0, // 新增规格临时下标
       newSpcifyValueIndex: 10, // 新增规格值的临时下标
       priceStockList: [],
       specifyList: [],
-      priceStockTableBatch: {
-        specify: [],
-        price: '',
-        stock: ''
-      },
+      priceStockTableBatch: {},
       customOptionKeyGourp: [
         'standard_color',
         'standard_dimension',
@@ -323,7 +320,7 @@ export default {
         children: 'children',
         label: 'name'
       },
-      tempImgIndex: { // 规格中图片的下标
+      tempImgIndex: { // 规格中图片的临时下标
         index: 0,
         rowIndex: 0
       },
@@ -343,7 +340,7 @@ export default {
         g_new: false,
         g_hot: false,
         is_special_offer: false,
-        g_discount_rate: '0',
+        g_under_discount: '0',
         g_add_time: '',
         g_discount_start_time: '',
         g_discount_end_time: '',
@@ -375,16 +372,10 @@ export default {
     }
   },
   created() {
+    this.token = getToken()
+    this.uploadUrl = this.uploadUrl + '&token=' + this.token
     this.editTypeCheck()
     this.fetchData()
-
-    if (this.specifyList.length > 0) {
-      this.fetchPriceStockData(this.specifyList)
-      this.fetchPriceStockBatch()
-    }
-
-    var token = getToken()
-    this.uploadUrl = this.uploadUrl + '&token=' + token
 
     if (this.editType == 'edit') {
       this.getImgDetail()
@@ -392,30 +383,35 @@ export default {
   },
   methods: {
     getGoodsInfo() { // 如果是编辑就获取商品信息
-      var token = getToken()
-      getGoodsInfo(token, this.gid).then(response => {
+      getGoodsInfo(this.token, this.gid).then(response => {
         var ret = response.data
         var goodsInfo = ret.goodsInfo
-        // var categoryInfo = ret.categoryInfo
+
         this.specifyList = ret.attrInfo
         this.priceStockList = ret.priceStockInfo
         // var refInfo = ret.refInfox
-        console.log(JSON.stringify(this.priceStockList))
-
         this.ruleForm.g_sku = goodsInfo.g_sku
         this.ruleForm.g_name = goodsInfo.g_name
         this.ruleForm.g_alias = goodsInfo.g_alias
         this.ruleForm.g_weight = goodsInfo.g_weight
         this.ruleForm.g_status = goodsInfo.g_status
         this.ruleForm.g_order = goodsInfo.g_order
-        this.ruleForm.g_recommended = goodsInfo.g_recommended
-        this.ruleForm.g_new = goodsInfo.g_new
-        this.ruleForm.g_hot = goodsInfo.g_hot
-        this.ruleForm.is_special_offer = goodsInfo.is_special_offer
-        this.ruleForm.g_discount_rate = goodsInfo.g_discount_rate
+        this.ruleForm.g_recommended = goodsInfo.g_recommended == 1
+        this.ruleForm.g_new = goodsInfo.g_new == 1
+        this.ruleForm.g_hot = goodsInfo.g_hot == 1
+        this.ruleForm.is_special_offer = goodsInfo.is_special_offer == 1
+        this.ruleForm.g_under_discount = goodsInfo.g_under_discount
+        this.ruleForm.g_discount_start_time = new Date(createdTimeFormat(goodsInfo.g_discount_start_time))
+        this.ruleForm.g_discount_end_time = new Date(createdTimeFormat(goodsInfo.g_discount_end_time))
+        this.ruleForm.g_add_time = new Date(createdTimeFormat(goodsInfo.g_add_time, 'date'))
         this.ruleForm.g_desc = goodsInfo.g_desc
         this.ruleForm.g_meta_title = goodsInfo.g_meta_title
         this.ruleForm.g_meta_keywords = goodsInfo.g_meta_keywords
+
+        this.setDefaultCheckedTree(ret.categoryInfo)
+        this.fetchPriceStockData(this.specifyList)
+        this.priceStockBatchBar()
+        this.countAllStock()
       })
     },
     editTypeCheck() { // 判断是编辑还是新增
@@ -460,20 +456,22 @@ export default {
       this.ruleForm.specifyList = this.specifyList
       this.ruleForm.priceStockList = this.priceStockList
 
-      var token = getToken()
-      submitCreate(token, this.ruleForm).then(response => {
+      submitCreate(this.token, this.ruleForm).then(response => {
         this.$message.success(response.data)
-        this.$router.go(0)
       })
     },
-    fetchPriceStockBatch() { // 组装价格库存批处理的数据
+    priceStockBatchBar() { // 组装价格库存批处理的数据
       var allOptions = { id: 0, specifyValue: 'All' }
+      this.priceStockTableBatch.specify = []
 
-      for (let index = 1; index <= this.specifyList.length; index++) {
-        var children = JSON.parse(JSON.stringify(this.specifyList[index - 1].children))
+      for (let index = 0; index < this.specifyList.length; index++) {
+        var children = JSON.parse(JSON.stringify(this.specifyList[index].children))
         children.unshift(allOptions)
-        this.priceStockTableBatch.specify[index - 1].standard_format = children
-        this.priceStockTableBatch.specify[index - 1].name = this.specifyList[index - 1].specifyValue
+
+        var obj = {}
+        obj['standard_format'] = children
+        obj['name'] = this.specifyList[index].specifyValue
+        this.priceStockTableBatch.specify.push(obj)
       }
     },
     fetchPriceStockData(list) { // 组装价格库存数据
@@ -554,8 +552,7 @@ export default {
       this.priceStockList = iterator
     },
     fetchData() {
-      var token = getToken()
-      getCategoryList(token).then(response => {
+      getCategoryList(this.token).then(response => {
         this.categoryList = response.data.items
       })
     },
@@ -568,12 +565,11 @@ export default {
       }
     },
     getImgDetail() {
-      // setTimeout(() => {
-      //   const res = {
-      //     imgList: ['https://abc.png']
-      //   }
-      //   this.formData = res
-      // }, 1000)
+      getStandardImg(this.token, this.gid).then(res => {
+        res.data.forEach(e => {
+          this.ruleForm.imgList.push(e)
+        })
+      })
     },
     addSpecify() { // 添加规格项目
       if (this.specifyList.length >= 3) {
@@ -601,15 +597,15 @@ export default {
       }
       this.specifyList.push(v)
       this.fetchPriceStockData(this.specifyList)
+
       this.renderPriceStockBatchTable()
-      this.fetchPriceStockBatch()
+      this.priceStockBatchBar()
       this.countAllStock()
     },
     gnameToUrlkey() { // 商品名复制到url-key
       var gName = this.ruleForm.g_name.trim()
       if (gName != '') {
-        var token = getToken()
-        checkUrlKey(token, gName).then(response => {
+        checkUrlKey(this.token, gName).then(response => {
           this.ruleForm.g_alias = response.data.url
         })
       }
@@ -643,7 +639,7 @@ export default {
       this.specifyList.splice(index, 1)
       this.fetchPriceStockData(this.specifyList)
       this.renderPriceStockBatchTable()
-      this.fetchPriceStockBatch()
+      this.priceStockBatchBar()
       this.countAllStock()
     },
     addSpecifyImg(index) { // 添加规格图片
@@ -707,7 +703,7 @@ export default {
 
       if (!oldPriceStockList) { return }
       this.matchPriceStock(oldPriceStockList, newPriceStockList)
-      this.fetchPriceStockBatch()
+      this.priceStockBatchBar()
       this.countAllStock()
       this.$message.success('重置成功')
     },
@@ -878,6 +874,11 @@ export default {
       if (this.priceStockList[index].stock.trim() === '') {
         this.priceStockList[index].stock = 0
       }
+    },
+    setDefaultCheckedTree(list) { // 动态选中赋值分类tree
+      list.forEach(e => {
+        this.ruleForm.categoryListChecked.push(e.c_id)
+      })
     }
   }
 }

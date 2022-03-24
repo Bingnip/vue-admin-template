@@ -41,3 +41,10 @@ export function getGoodsInfo(token, gid) {
   })
 }
 
+export function getStandardImg(token, gid) {
+  return request({
+    url: '/goods.php?action=getImgInfo',
+    method: 'post',
+    params: { token, gid }
+  })
+}

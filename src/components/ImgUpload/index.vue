@@ -23,7 +23,7 @@
         class="draggable-item"
         :style="{ width: width + 'px', height: height + 'px' }"
       >
-        <el-image :src="cdnPrefix + item" :preview-src-list="[item]" />
+        <el-image :src="cdnPrefix + item.gi_img" :preview-src-list="[cdnPrefix + item.gi_img]" />
         <div class="shadow" @click="onRemoveHandler(index)">
           <i class="el-icon-delete" :name="index" />
         </div>
@@ -52,7 +52,7 @@
         <i class="el-icon-plus uploadIcon">
           <span v-show="isUploading" class="uploading">正在上传...</span>
           <span
-            v-if="!isUploading && limit && limit!==99 && !isSingle"
+            v-if="!isUploading && limit && limit!==50 && !isSingle"
             class="limitTxt"
           >最多{{ limit }}张</span>
         </i>
@@ -66,6 +66,7 @@ import vuedraggable from 'vuedraggable' // 一款vue拖拽插件
 import lrz from 'lrz' // 一款图片压缩插件
 import utils from '@/utils/img-upload'
 import { getToken } from '@/utils/auth'
+import { Loading } from 'element-ui'
 
 export default {
   name: 'ImgUpload',
@@ -81,7 +82,7 @@ export default {
     // 限制上传的图片数量
     limit: {
       type: Number,
-      default: 99
+      default: 50
     },
     // 限制上传图片的文件大小(kb)
     size: {
@@ -116,8 +117,8 @@ export default {
       isUploading: false, // 正在上传状态
       isFirstMount: true, // 控制防止重复回显
       uploadUrl: '/goods.php?action=imgUpload',
-      cdnPrefix: '//du7nt18x31vr8.cloudfront.net/assets/images/product/'
-      // uploadUrl: 'https://httpbin.org/post'
+      cdnPrefix: '//du7nt18x31vr8.cloudfront.net/assets/images/product/',
+      loading: null
     }
   },
 
@@ -187,6 +188,7 @@ export default {
           }).always(() => {
             if (utils.validImgUpload(file, this.size)) {
               this.isUploading = true
+              this.onLoadingOpen()
               resolve()
             } else {
               reject(new Error())
@@ -196,23 +198,42 @@ export default {
       } else {
         if (utils.validImgUpload(file, this.size)) {
           this.isUploading = true
+          this.onLoadingOpen()
           return true
         } else {
           return false
         }
       }
     },
+    onLoadingOpen() {
+      if (this.loading) {
+        this.loading.close()
+      }
+
+      this.loading = Loading.service({
+        lock: true, // lock的修改符--默认是false
+        text: '上传中...', // 显示在加载图标下方的加载文案
+        spinner: 'el-icon-loading', // 自定义加载图标类名
+        background: 'rgba(0, 0, 0, 0)', // 遮罩层颜色
+        target: document.querySelector('.img-upload-pane')// loadin覆盖的dom元素节点
+      })
+    },
+    onLoadingClose() {
+      this.loading.close()
+    },
     // 上传完单张图片
     onSuccessUpload(res, file, fileList) {
       if (!res.error && res.result) {
         if (this.imgList.length < this.limit) {
-          this.imgList.push(res.result.filename)
+          this.imgList.push(res.result.obj)
         }
       } else {
         this.syncElUpload()
         this.$message({ type: 'error', message: res.msg })
       }
+
       this.isUploading = false
+      this.onLoadingClose()
     },
     // 移除单张图片
     onRemoveHandler(index) {
