@@ -16,6 +16,18 @@ export function getCategoryList(token) {
   })
 }
 
+export function uploadImg(token, formData) {
+  return request({
+    url: '/goods.php?action=imgUpload',
+    method: 'post',
+    params: { token },
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
 export function checkUrlKey(token, gName) {
   return request({
     url: '/goods.php?action=checkUrlKey',

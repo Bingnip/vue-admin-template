@@ -148,15 +148,15 @@
                       <el-col :span="9" :offset="1"><el-input v-model="row.specifyValue" /></el-col>
                       <el-col :span="3" :offset="1"><el-input v-model="row.order" /></el-col>
                       <el-col v-if="item.imgOpen == 1" :span="5">
-                        <el-upload class="avatar-uploader" :action="uploadUrl" :show-file-list="false" accept=".jpg,.jpeg,.png" :on-success="handleAvatarSuccess" :before-upload="beforeAvatarUpload">
-                          <img v-if="row.img" :src="cdnPrefix + row.img" class="avatar" @click="changeUpload(index, rowIndex)">
-                          <i v-else class="el-icon-plus avatar-uploader-icon" @click="changeUpload(index, rowIndex)" />
+                        <el-upload class="avatar-uploader" action="" :show-file-list="false" :auto-upload="false" accept=".jpg,.jpeg,.png" :limit="1" :on-change="(file, fileList) => {handleUploadChange(file, fileList, index, rowIndex)}">
+                          <img v-if="row.img" :src="cdnPrefix + row.img" class="avatar">
+                          <i v-else class="el-icon-plus avatar-uploader-icon" />
                         </el-upload>
                       </el-col>
                       <el-col :span="2" :offset="1">
-                        <input type="radio" :name="item.id" :checked="row.default" @click="specifyValueCheck(index, rowIndex)">
+                        <input type="radio" :name="item.id" :checked="row.default">
                       </el-col>
-                      <el-col :span="2"><el-button type="danger" size="mini" @click="removeSpecifyValue(index, rowIndex)">删除</el-button></el-col>
+                      <el-col :span="2"><el-button type="danger" size="mini">删除</el-button></el-col>
                     </el-row>
                   </table>
                 </el-row>
@@ -291,7 +291,7 @@
 </template>
 
 <script>
-import { getCategoryList, checkUrlKey, submitCreateOrEdit, getGoodsInfo, getStandardImg, editAlias, getAlias, setRedirectUrl } from '@/api/goods/standard'
+import { getCategoryList, checkUrlKey, submitCreateOrEdit, getGoodsInfo, getStandardImg, editAlias, getAlias, setRedirectUrl, uploadImg } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
 import { in_array, createdTimeFormat } from '@/utils'
@@ -450,6 +450,9 @@ export default {
         return false
       } else if (this.ruleForm.categoryListChecked.length == 0) {
         this.$message.warning('选择分类')
+        return false
+      } else if (this.ruleForm.throughLinePrice == 0) {
+        this.$message.warning('请填写划线价')
         return false
       }
 
@@ -674,32 +677,17 @@ export default {
       })
       this.specifyList[index].children[rowIndex].default = 1
     },
-    handleAvatarSuccess(res) {
-      if (!res.code) {
-        var index = this.tempImgIndex.index
-        var rowIndex = this.tempImgIndex.rowIndex
-        var img = res.result.obj.gi_img
-        this.specifyList[index].children[rowIndex].img = img
-      } else {
-        this.$message.error(res.msg)
-      }
-    },
-    changeUpload(index, rowIndex) {
-      this.tempImgIndex.index = index
-      this.tempImgIndex.rowIndex = rowIndex
-    },
-    beforeAvatarUpload(file) {
-      const isJPG = file.type === 'image/jpeg' || file.type === 'image/png'
-      const isLt2M = file.size / 1024 / 1024 < 2
+    handleUploadChange(file, fileList, index, rowIndex) { // 规格图片上传
+      console.log(JSON.stringify(file))
+      console.log(JSON.stringify(fileList))
+      console.log(JSON.stringify(index))
+      console.log(JSON.stringify(rowIndex))
 
-      if (!isJPG) {
-        this.$message.error('上传头像图片只能是 jpg/jpeg/png 格式!')
-      }
-      if (!isLt2M) {
-        this.$message.error('上传头像图片大小不能超过 2MB!')
-      }
-
-      return isJPG && isLt2M
+      const formData = new FormData()
+      formData.append('file', file.raw)
+      uploadImg(this.token, formData).then(response => {
+        console.log(JSON.stringify(response))
+      })
     },
     buildePriceStockList() { // 重置价格表
       const oldPriceStockList = this.priceStockList

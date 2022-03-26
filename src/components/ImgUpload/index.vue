@@ -67,7 +67,6 @@ import vuedraggable from 'vuedraggable' // 一款vue拖拽插件
 import lrz from 'lrz' // 一款图片压缩插件
 import utils from '@/utils/img-upload'
 import { getToken } from '@/utils/auth'
-import { Loading } from 'element-ui'
 
 export default {
   name: 'ImgUpload',
@@ -190,7 +189,6 @@ export default {
           }).always(() => {
             if (utils.validImgUpload(file, this.size)) {
               this.isUploading = true
-              this.onLoadingOpen()
               resolve()
             } else {
               reject(new Error())
@@ -200,25 +198,11 @@ export default {
       } else {
         if (utils.validImgUpload(file, this.size)) {
           this.isUploading = true
-          this.onLoadingOpen()
           return true
         } else {
           return false
         }
       }
-    },
-    onLoadingOpen() {
-      if (this.loading) {
-        this.loading.close()
-      }
-
-      this.loading = Loading.service({
-        lock: true, // lock的修改符--默认是false
-        text: '上传中...', // 显示在加载图标下方的加载文案
-        spinner: 'el-icon-loading', // 自定义加载图标类名
-        background: 'rgba(0, 0, 0, 0)', // 遮罩层颜色
-        target: document.querySelector('.img-upload-pane')// loadin覆盖的dom元素节点
-      })
     },
     // 上传完单张图片
     onSuccessUpload(res, file, fileList) {
@@ -232,7 +216,6 @@ export default {
       }
 
       this.isUploading = false
-      this.loading.close()
     },
     // 移除单张图片
     onRemoveHandler(index) {
