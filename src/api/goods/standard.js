@@ -131,3 +131,11 @@ export function removeSpecifyValue(token, cvId) {
     params: { token, cvId }
   })
 }
+
+export function delRefGoods(token, refId) {
+  return request({
+    url: '/goods.php?action=delRefGoods',
+    method: 'post',
+    params: { token, refId }
+  })
+}

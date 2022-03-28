@@ -276,10 +276,16 @@
               </el-col>
             </el-form-item>
             <el-form-item>
-              <el-table :data="ruleForm.gidRefList" stripe style="width: 60%">
-                <el-table-column prop="gid" label="商品ID" width="100" />
+              <el-table :data="ruleForm.gidRefList" stripe style="width: 180px;">
+                <el-table-column label="商品ID" width="100">
+                  <template slot-scope="scope">
+                    <span>{{ scope.row.rgr_recommend_gid }}</span>
+                  </template>
+                </el-table-column>
                 <el-table-column label="操作" width="70">
-                  <el-button type="danger" size="mini">删除</el-button>
+                  <template slot-scope="scope">
+                    <el-button type="danger" size="mini" @click="delRecommendGid(scope.row.rgr_id, scope)">删除</el-button>
+                  </template>
                 </el-table-column>
               </el-table>
             </el-form-item>
@@ -293,7 +299,7 @@
 </template>
 
 <script>
-import { getCategoryList, checkUrlKey, submitCreateOrEdit, getGoodsInfo, getStandardImg, editAlias, getAlias, setRedirectUrl, uploadImg, addRefGoods, removeSpecify, removeSpecifyValue } from '@/api/goods/standard'
+import { getCategoryList, checkUrlKey, submitCreateOrEdit, getGoodsInfo, getStandardImg, editAlias, getAlias, setRedirectUrl, uploadImg, addRefGoods, removeSpecify, removeSpecifyValue, delRefGoods } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
 import { in_array, createdTimeFormat } from '@/utils'
@@ -398,7 +404,7 @@ export default {
 
         this.specifyList = ret.attrInfo
         this.priceStockList = ret.priceStockInfo
-        this.ruleForm.gidRefList = ret.refInfox
+        this.ruleForm.gidRefList = ret.refInfo
         this.ruleForm.g_sku = goodsInfo.g_sku
         this.ruleForm.g_name = goodsInfo.g_name
         this.ruleForm.g_alias = goodsInfo.g_alias
@@ -1055,8 +1061,19 @@ export default {
       }
     },
     addRefGid() { // 添加关联商品
-      addRefGoods(this.token, this.refGid, this.gid).then(response => {
-        this.ruleForm.gidRefList.push(response.data.gid)
+      addRefGoods(this.token, this.refGid, this.ruleForm.gid).then(response => {
+        if (response.data.error == 1) {
+          this.$message.error(response.data.msg)
+          return
+        }
+
+        this.ruleForm.gidRefList.push(response.data.obj)
+      })
+    },
+    delRecommendGid(id, scope) { // 删除关联产品
+      delRefGoods(this.token, id).then(response => {
+        this.$message.success(response.data)
+        this.ruleForm.gidRefList.splice(scope.$index)
       })
     }
   }
