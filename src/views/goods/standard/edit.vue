@@ -156,7 +156,7 @@
                         </el-upload>
                       </el-col>
                       <el-col :span="2">
-                        <input type="radio" :name="item.id" :checked="row.default" @click="resetCheckbox(index, rowIndex)">
+                        <input type="radio" :name="item.id" :checked="row.default == 1" @click="resetCheckbox(index, rowIndex)">
                       </el-col>
                       <el-col :span="2"><el-button type="danger" size="mini" @click="removeSpecifyValue(index, rowIndex)">删除</el-button></el-col>
                     </el-row>
@@ -184,7 +184,7 @@
                 </el-col>
               </el-row>
               <table v-if="priceStockTableBatch.specify.length > 0" class="price-stock-table" border="0" cellspacing="0" cellpadding="0">
-                <tr class="price-stock-table-header">
+                <tr class="price-stock-table-header price-stock-table-th">
                   <td v-for="(pstItem, pstIndex) in priceStockTableBatch.specify" :key="pstIndex">
                     <el-select v-model="pstItem.id" clearable placeholder="选择规格" @change="$forceUpdate()">
                       <el-option v-for="(sfItem) in pstItem.standard_format" :key="sfItem.id" :label="sfItem.specifyValue" :value="sfItem.id" />
@@ -197,7 +197,7 @@
                     <el-input v-model="priceStockTableBatch.stock" placeholder="请输入库存" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
                   </td>
                 </tr>
-                <tr>
+                <tr class="price-stock-table-th">
                   <td v-for="(items, idx) in specifyList" :key="idx">{{ items.specifyValue }}</td>
                   <td>价格</td><td>库存</td></tr>
                 <template v-for="(item, idx) in priceStockList">
@@ -293,7 +293,7 @@
 </template>
 
 <script>
-import { getCategoryList, checkUrlKey, submitCreateOrEdit, getGoodsInfo, getStandardImg, editAlias, getAlias, setRedirectUrl, uploadImg, addRefGoods } from '@/api/goods/standard'
+import { getCategoryList, checkUrlKey, submitCreateOrEdit, getGoodsInfo, getStandardImg, editAlias, getAlias, setRedirectUrl, uploadImg, addRefGoods, removeSpecify, removeSpecifyValue } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
 import { in_array, createdTimeFormat } from '@/utils'
@@ -398,8 +398,6 @@ export default {
 
         this.specifyList = ret.attrInfo
         this.priceStockList = ret.priceStockInfo
-        console.log(JSON.stringify(ret.refInfox))
-
         this.ruleForm.gidRefList = ret.refInfox
         this.ruleForm.g_sku = goodsInfo.g_sku
         this.ruleForm.g_name = goodsInfo.g_name
@@ -456,17 +454,28 @@ export default {
       } else if (this.ruleForm.categoryListChecked.length == 0) {
         this.$message.warning('选择分类')
         return false
-      } else if (this.ruleForm.throughLinePrice == 0) {
-        this.$message.warning('请填写划线价')
-        return false
       }
 
       return true
+    },
+    filterSpecifyValuePrice() { // 检查价格表价格是否有0
+      for (var i of this.priceStockList) {
+        if (i.price == 0) {
+          var msg = '价格未填： '
+          for (var k of i.specify) {
+            msg += k.specifyValue + ' '
+          }
+          this.$message.warning(msg)
+          return false
+        }
+      }
     },
     onSubmit() {
       if (!this.filterSubmitData()) { return false }
       this.ruleForm.specifyList = this.specifyList
       this.ruleForm.priceStockList = this.priceStockList
+      if (this.editType == 'edit') { this.buildePriceStockList(false) }
+      if (!this.filterSpecifyValuePrice()) { return false }
 
       submitCreateOrEdit(this.token, this.ruleForm, this.editType).then(response => {
         this.$message.success(response.data)
@@ -647,7 +656,20 @@ export default {
       this.priceStockTableBatch.specify = specify
     },
     removeSpecify(index) { // 删除规格项目
-      this.specifyList.splice(index, 1)
+      if (this.specifyList[index].id > 100) {
+        this.$confirm('确定删除？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          removeSpecify(this.token, this.specifyList[index].id).then(response => {
+            this.specifyList.splice(index, 1)
+          })
+        }).catch(() => {})
+      } else {
+        this.specifyList.splice(index, 1)
+      }
+
       this.fetchPriceStockData(this.specifyList)
       this.renderPriceStockBatchTable()
       this.priceStockBatchBar()
@@ -658,26 +680,40 @@ export default {
     },
     addSpecifyValue(index) { // 添加规格值
       this.newSpcifyValueIndex += 1
-      var v = { id: this.newSpcifyValueIndex, specifyValue: '', order: '', img: [], default: 0, deleted: 0, price: 0, stock: 0 }
+      var v = { id: this.newSpcifyValueIndex, specifyValue: '', order: '', img: '', default: 0, deleted: 0, price: 0, stock: 0 }
       this.specifyList[index].children.push(v)
     },
     removeSpecifyValue(index, rowIndex) { // 删除规格值
       var isRemoveChecked = false
-
       if (this.specifyList[index].children[rowIndex].default == 1) {
         isRemoveChecked = true
       }
-      this.specifyList[index].children.splice(rowIndex, 1)
-      if (isRemoveChecked && this.specifyList[index].children.length > 0) {
-        this.specifyList[index].children[0].default = 1
+
+      if (this.specifyList[index].children[rowIndex].id > 500) {
+        this.$confirm('确定删除？', '提示', {
+          confirmButtonText: '确定',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }).then(() => {
+          removeSpecifyValue(this.token, this.specifyList[index].children[rowIndex].id).then(response => {
+            this.specifyList[index].children.splice(rowIndex, 1)
+            if (isRemoveChecked && this.specifyList[index].children.length > 0) {
+              this.specifyList[index].children[0].default = 1
+            }
+          })
+        }).catch(() => {})
+      } else {
+        this.specifyList[index].children.splice(rowIndex, 1)
+        if (isRemoveChecked && this.specifyList[index].children.length > 0) {
+          this.specifyList[index].children[0].default = 1
+        }
       }
     },
     resetCheckbox(index, rowIndex) { // checkbox确认
-      for (var i of this.specifyList) {
-        for (var it of i.children) {
-          it.default = 0
-        }
+      for (var it of this.specifyList[index].children) {
+        it.default = 0
       }
+
       this.specifyList[index].children[rowIndex].default = 1
     },
     specifyValueCheck(index, rowIndex) { // 规格值默认项选中
@@ -686,19 +722,20 @@ export default {
       })
       this.specifyList[index].children[rowIndex].default = 1
     },
-    handleUploadChange(file, fileList, index, rowIndex) { // 规格图片上传
-      console.log(JSON.stringify(file))
-      console.log(JSON.stringify(fileList))
-      console.log(JSON.stringify(index))
-      console.log(JSON.stringify(rowIndex))
+    handleUploadChange(file, index, rowIndex) { // 规格图片上传
+      this.$refs[`upload[${index}][${rowIndex}]`].clearFiles()
 
       const formData = new FormData()
       formData.append('file', file.raw)
-      uploadImg(this.token, formData).then(response => {
-        console.log(JSON.stringify(response))
+
+      uploadImg(this.token, formData, index, rowIndex).then(response => {
+        var index = response.data.index
+        var rowIndex = response.data.rowIndex
+
+        this.specifyList[index].children[rowIndex].img = response.data.gi_img
       })
     },
-    buildePriceStockList() { // 重置价格表
+    buildePriceStockList(alert = true) { // 重置价格表
       const oldPriceStockList = this.priceStockList
       this.priceStockList = []
       this.fetchPriceStockData(this.specifyList)
@@ -708,7 +745,9 @@ export default {
       this.matchPriceStock(oldPriceStockList, newPriceStockList)
       this.priceStockBatchBar()
       this.countAllStock()
-      this.$message.success('重置成功')
+      this.priceStockTableBatch.price = ''
+      this.priceStockTableBatch.stock = ''
+      if (alert) { this.$message.success('重置成功') }
     },
     matchPriceStock(oldList, newList) {
       var newListSpecify = this.formatSpecifyList(newList)
@@ -936,8 +975,6 @@ export default {
       this.ruleForm.g_meta_title = this.ruleForm.g_name
     },
     fillMetaKeywords() {
-      console.log(JSON.stringify(this.ruleForm.categoryListChecked))
-
       if (this.ruleForm.categoryListChecked.length == 0) {
         this.$message.warning('商品分类未勾选')
         return
@@ -1080,4 +1117,5 @@ export default {
     -moz-appearance: textfield;
   }
   .price-stock-table{width: 80%; margin: 15px; padding: 20px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);border-radius: 4px;}
+  .price-stock-table-th {font-weight: 700; color: #606266;}
 </style>

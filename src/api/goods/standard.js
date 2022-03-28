@@ -16,15 +16,12 @@ export function getCategoryList(token) {
   })
 }
 
-export function uploadImg(token, formData) {
+export function uploadImg(token, formData, index, rowIndex) {
   return request({
     url: '/goods.php?action=imgUpload',
     method: 'post',
-    params: { token },
-    data: formData,
-    headers: {
-      'Content-Type': 'multipart/form-data'
-    }
+    params: { token, type: 'imgUpload', index, rowIndex },
+    data: formData
   })
 }
 
@@ -116,5 +113,21 @@ export function addRefGoods(token, gid, pGid) {
     url: '/goods.php?action=addRecommendGid',
     method: 'post',
     params: { token, gid, pGid }
+  })
+}
+
+export function removeSpecify(token, caId) {
+  return request({
+    url: '/goods.php?action=removeSpecify',
+    method: 'post',
+    params: { token, caId }
+  })
+}
+
+export function removeSpecifyValue(token, cvId) {
+  return request({
+    url: '/goods.php?action=removeSpecifyValue',
+    method: 'post',
+    params: { token, cvId }
   })
 }

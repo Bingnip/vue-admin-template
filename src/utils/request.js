@@ -17,8 +17,12 @@ service.interceptors.request.use(
     // do something before request is sent
 
     if (config.method === 'post') {
-      config.data = qs.stringify(config.data)
-      config.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+      if (config.params && config.params.type && config.params.type == 'imgUpload') {
+        config.headers['Content-Type'] = 'multipart/form-data'
+      } else {
+        config.data = qs.stringify(config.data)
+        config.headers['Content-Type'] = 'application/x-www-form-urlencoded'
+      }
     }
 
     if (store.getters.token) {

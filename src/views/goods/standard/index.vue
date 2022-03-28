@@ -161,8 +161,6 @@ export default {
       this.fetchData()
     },
     deleteGoods(gid, index) {
-      console.log(JSON.stringify(gid))
-
       this.$confirm('确定删除？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
