@@ -1,10 +1,10 @@
 import request from '@/utils/request'
 
-export function getList(token) {
+export function getList(token, pageSize, currentPage) {
   return request({
     url: '/goods.php?action=getList',
     method: 'post',
-    params: { token }
+    params: { token, pageSize, currentPage }
   })
 }
 
@@ -103,3 +103,18 @@ export function removeStandardImg(token, imgId) {
   })
 }
 
+export function deleteGoods(token, gid) {
+  return request({
+    url: '/goods.php?action=deleteGoods',
+    method: 'post',
+    params: { token, gid }
+  })
+}
+
+export function addRefGoods(token, gid, pGid) {
+  return request({
+    url: '/goods.php?action=addRecommendGid',
+    method: 'post',
+    params: { token, gid, pGid }
+  })
+}

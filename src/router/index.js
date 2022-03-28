@@ -66,7 +66,7 @@ export const constantRoutes = [
         path: 'standard_goods_edit/:id',
         name: 'standard_goods_edit',
         component: () => import('@/views/goods/standard/edit'),
-        meta: { title: '新增/编辑 标品', icon: 'el-icon-notebook-2' }
+        meta: { title: '新增标品', icon: 'el-icon-notebook-2' }
       },
       {
         path: 'standard_goods',

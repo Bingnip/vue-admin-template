@@ -68,13 +68,13 @@
               <div v-if="ruleForm.g_under_discount == '1'">
                 <el-col :span="5">
                   <el-form-item prop="g_discount_start_time">
-                    <el-date-picker v-model="ruleForm.g_discount_start_time" type="datetime" placeholder="开始日期" style="width: 100%;" value-format="timestamp" />
+                    <el-date-picker v-model="ruleForm.g_discount_start_time" type="datetime" placeholder="开始日期" style="width: 100%;" value-format="timestamp" @blur="checkDiscountTime()" />
                   </el-form-item>
                 </el-col>
                 <el-col class="line" :span="1" :offset="1">~</el-col>
                 <el-col :span="5">
                   <el-form-item prop="g_discount_end_time">
-                    <el-date-picker v-model="ruleForm.g_discount_end_time" type="datetime" placeholder="结束时间" style="width: 100%;" value-format="timestamp" />
+                    <el-date-picker v-model="ruleForm.g_discount_end_time" type="datetime" placeholder="结束时间" style="width: 100%;" value-format="timestamp" @blur="checkDiscountTime()" />
                   </el-form-item>
                 </el-col>
               </div>
@@ -98,16 +98,18 @@
           </el-tab-pane>
 
           <el-tab-pane label="商品规格">
-            <el-header><el-button type="primary" size="mini" @click="addSpecify()">添加规格项目</el-button></el-header>
+            <el-header>
+              <el-button type="primary" size="mini" @click="addSpecify()">添加规格项目</el-button>
+            </el-header>
             <el-main v-if="specifyList.length > 0">
-              <table v-for="(item, index) in specifyList" :key="item.id" style="width: 80%; margin: 15px; padding: 20px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);border-radius: 4px;">
+              <table v-for="(item, index) in specifyList" :key="item.id" class="price-stock-table">
                 <el-row :gutter="24">
                   <el-col :span="2">
                     <el-form-item label="规格名：" />
                   </el-col>
                   <el-col :span="5"><el-input v-model="item.specifyValue" /></el-col>
                   <el-col :span="2">
-                    <el-form-item label="Key：" />
+                    <el-form-item label="标识：" />
                   </el-col>
                   <el-col :span="4">
                     <el-select v-model="item.customOptionKey" placeholder="请选择属性标识">
@@ -130,10 +132,10 @@
                 <el-row>
                   <table>
                     <el-row :gutter="24">
-                      <el-col :span="10">
+                      <el-col :span="7">
                         <el-form-item label="规则值" />
                       </el-col>
-                      <el-col :span="3">
+                      <el-col :span="4">
                         <el-form-item label="排序" />
                       </el-col>
                       <el-col v-if="item.imgOpen == 1" :span="5">
@@ -145,18 +147,18 @@
                       <el-col :span="3" />
                     </el-row>
                     <el-row v-for="(row, rowIndex) in item.children" :key="row.id" :gutter="24">
-                      <el-col :span="9" :offset="1"><el-input v-model="row.specifyValue" /></el-col>
-                      <el-col :span="3" :offset="1"><el-input v-model="row.order" /></el-col>
-                      <el-col v-if="item.imgOpen == 1" :span="5">
+                      <el-col :span="8"><el-input v-model="row.specifyValue" /></el-col>
+                      <el-col :span="3"><el-input v-model="row.order" /></el-col>
+                      <el-col v-if="item.imgOpen == 1" :span="9">
                         <el-upload class="avatar-uploader" action="" :show-file-list="false" :auto-upload="false" accept=".jpg,.jpeg,.png" :limit="1" :on-change="(file, fileList) => {handleUploadChange(file, fileList, index, rowIndex)}">
                           <img v-if="row.img" :src="cdnPrefix + row.img" class="avatar">
                           <i v-else class="el-icon-plus avatar-uploader-icon" />
                         </el-upload>
                       </el-col>
-                      <el-col :span="2" :offset="1">
-                        <input type="radio" :name="item.id" :checked="row.default">
+                      <el-col :span="2">
+                        <input type="radio" :name="item.id" :checked="row.default" @click="resetCheckbox(index, rowIndex)">
                       </el-col>
-                      <el-col :span="2"><el-button type="danger" size="mini">删除</el-button></el-col>
+                      <el-col :span="2"><el-button type="danger" size="mini" @click="removeSpecifyValue(index, rowIndex)">删除</el-button></el-col>
                     </el-row>
                   </table>
                 </el-row>
@@ -184,7 +186,7 @@
               <table v-if="priceStockTableBatch.specify.length > 0" class="price-stock-table" border="0" cellspacing="0" cellpadding="0">
                 <tr class="price-stock-table-header">
                   <td v-for="(pstItem, pstIndex) in priceStockTableBatch.specify" :key="pstIndex">
-                    <el-select v-model="pstItem.id" clearable placeholder="选择规格">
+                    <el-select v-model="pstItem.id" clearable placeholder="选择规格" @change="$forceUpdate()">
                       <el-option v-for="(sfItem) in pstItem.standard_format" :key="sfItem.id" :label="sfItem.specifyValue" :value="sfItem.id" />
                     </el-select>
                   </td>
@@ -267,10 +269,10 @@
           <el-tab-pane v-if="editType == 'edit'" label="关联商品">
             <el-form-item label="商品ID">
               <el-col :span="12">
-                <el-input placeholder="输入ID, 多个已英文逗号(,)隔开" />
+                <el-input v-model="refGid" placeholder="输入ID" />
               </el-col>
               <el-col :span="4">
-                <el-button type="primary" size="small">加入</el-button>
+                <el-button type="primary" size="small" @click="addRefGid">加入</el-button>
               </el-col>
             </el-form-item>
             <el-form-item>
@@ -291,7 +293,7 @@
 </template>
 
 <script>
-import { getCategoryList, checkUrlKey, submitCreateOrEdit, getGoodsInfo, getStandardImg, editAlias, getAlias, setRedirectUrl, uploadImg } from '@/api/goods/standard'
+import { getCategoryList, checkUrlKey, submitCreateOrEdit, getGoodsInfo, getStandardImg, editAlias, getAlias, setRedirectUrl, uploadImg, addRefGoods } from '@/api/goods/standard'
 import Tinymce from '@/components/Tinymce'
 import ImgUpload from '@/components/ImgUpload'
 import { in_array, createdTimeFormat } from '@/utils'
@@ -329,6 +331,7 @@ export default {
         index: 0,
         rowIndex: 0
       },
+      refGid: null,
       uploadUrl: '/goods.php?action=imgUpload',
       cdnPrefix: '//du7nt18x31vr8.cloudfront.net/assets/images/product/',
       labelPosition: 'right',
@@ -395,7 +398,9 @@ export default {
 
         this.specifyList = ret.attrInfo
         this.priceStockList = ret.priceStockInfo
-        // var refInfo = ret.refInfox
+        console.log(JSON.stringify(ret.refInfox))
+
+        this.ruleForm.gidRefList = ret.refInfox
         this.ruleForm.g_sku = goodsInfo.g_sku
         this.ruleForm.g_name = goodsInfo.g_name
         this.ruleForm.g_alias = goodsInfo.g_alias
@@ -459,9 +464,7 @@ export default {
       return true
     },
     onSubmit() {
-      if (!this.filterSubmitData()) {
-        return false
-      }
+      if (!this.filterSubmitData()) { return false }
       this.ruleForm.specifyList = this.specifyList
       this.ruleForm.priceStockList = this.priceStockList
 
@@ -478,6 +481,7 @@ export default {
         children.unshift(allOptions)
 
         var obj = {}
+        obj['id'] = ''
         obj['standard_format'] = children
         obj['name'] = this.specifyList[index].specifyValue
         this.priceStockTableBatch.specify.push(obj)
@@ -632,13 +636,11 @@ export default {
     },
     renderPriceStockBatchTable() { // 生成批量修改的那些数据
       var specify = []
-
       this.specifyList.forEach(e => {
         var obj = {}
         obj['id'] = ''
         obj['standard_format'] = []
         obj['name'] = e.specifyValue
-
         specify.push(obj)
       })
 
@@ -656,7 +658,7 @@ export default {
     },
     addSpecifyValue(index) { // 添加规格值
       this.newSpcifyValueIndex += 1
-      var v = { id: this.newSpcifyValueIndex, specifyValue: '', order: '', img: '', default: 0, deleted: 0, price: 0, stock: 0 }
+      var v = { id: this.newSpcifyValueIndex, specifyValue: '', order: '', img: [], default: 0, deleted: 0, price: 0, stock: 0 }
       this.specifyList[index].children.push(v)
     },
     removeSpecifyValue(index, rowIndex) { // 删除规格值
@@ -666,10 +668,17 @@ export default {
         isRemoveChecked = true
       }
       this.specifyList[index].children.splice(rowIndex, 1)
-
-      if (isRemoveChecked) {
+      if (isRemoveChecked && this.specifyList[index].children.length > 0) {
         this.specifyList[index].children[0].default = 1
       }
+    },
+    resetCheckbox(index, rowIndex) { // checkbox确认
+      for (var i of this.specifyList) {
+        for (var it of i.children) {
+          it.default = 0
+        }
+      }
+      this.specifyList[index].children[rowIndex].default = 1
     },
     specifyValueCheck(index, rowIndex) { // 规格值默认项选中
       this.specifyList[index].children.forEach(e => {
@@ -776,39 +785,26 @@ export default {
       var specifySelected = []
 
       if (specify) {
-        specify.forEach(e => {
+        for (var item of specify) {
           var selected = []
-
-          if (e.id === '') {
-            this.$message.warning('请输入批量修改 ' + e.name)
+          if (item.id === '') {
+            this.$message.warning('请输入批量修改 规格 ' + item.name)
             return false
           }
-
-          if (e.id == 0) {
-            for (let index = 1; index < e.standard_format.length; index++) {
-              selected.push(e.standard_format[index].specifyValue)
+          if (item.id == 0) {
+            for (let index = 1; index < item.standard_format.length; index++) {
+              selected.push(item.standard_format[index].specifyValue)
             }
           } else {
-            var selectedId = e.id
-            for (let index = 1; index < e.standard_format.length; index++) {
-              if (e.standard_format[index].id == selectedId) {
-                selected.push(e.standard_format[index].specifyValue)
+            var selectedId = item.id
+            for (let index = 1; index < item.standard_format.length; index++) {
+              if (item.standard_format[index].id == selectedId) {
+                selected.push(item.standard_format[index].specifyValue)
               }
             }
           }
-
           specifySelected.push(selected)
-        })
-      }
-
-      if (!this.priceStockTableBatch.price) {
-        this.$message.warning('请输入批量修改 价格')
-        return false
-      }
-
-      if (!this.priceStockTableBatch.stock) {
-        this.$message.warning('请输入批量修改 库存')
-        return false
+        }
       }
 
       var batchObj = {}
@@ -829,16 +825,16 @@ export default {
           case 1:
             var specify = batchSpecify[0]
             if (in_array(e.specify[0].specifyValue, specify)) {
-              e.price = batchObj.price
-              e.stock = batchObj.stock
+              if (typeof (batchObj.price) != 'undefined') { e.price = batchObj.price }
+              if (typeof (batchObj.stock) != 'undefined') { e.stock = batchObj.stock }
             }
             break
           case 2:
             var specify1 = batchSpecify[0]
             var specify2 = batchSpecify[1]
             if (in_array(e.specify[0].specifyValue, specify1) && in_array(e.specify[1].specifyValue, specify2)) {
-              e.price = batchObj.price
-              e.stock = batchObj.stock
+              if (typeof (batchObj.price) != 'undefined') { e.price = batchObj.price }
+              if (typeof (batchObj.stock) != 'undefined') { e.stock = batchObj.stock }
             }
             break
           case 3:
@@ -846,8 +842,8 @@ export default {
             var specifys2 = batchSpecify[1]
             var specifys3 = batchSpecify[2]
             if (in_array(e.specify[0].specifyValue, specifys1) && in_array(e.specify[1].specifyValue, specifys2) && in_array(e.specify[2].specifyValue, specifys3)) {
-              e.price = batchObj.price
-              e.stock = batchObj.stock
+              if (typeof (batchObj.price) != 'undefined') { e.price = batchObj.price }
+              if (typeof (batchObj.stock) != 'undefined') { e.stock = batchObj.stock }
             }
             break
         }
@@ -933,9 +929,20 @@ export default {
       })
     },
     fillMetaTitle() {
+      if (!this.ruleForm.g_name.trim()) {
+        this.$message.warning('商品名称未填')
+        return
+      }
       this.ruleForm.g_meta_title = this.ruleForm.g_name
     },
     fillMetaKeywords() {
+      console.log(JSON.stringify(this.ruleForm.categoryListChecked))
+
+      if (this.ruleForm.categoryListChecked.length == 0) {
+        this.$message.warning('商品分类未勾选')
+        return
+      }
+
       var cateIdArr = this.ruleForm.categoryListChecked
       var cateInfo = ''
 
@@ -948,6 +955,72 @@ export default {
       })
 
       this.ruleForm.g_meta_keywords = cateInfo.substring(0, cateInfo.length - 1)
+    },
+    checkDiscountTime() { // 检查活动起止时间
+      if (this.ruleForm.g_discount_start_time && this.ruleForm.g_discount_end_time && this.ruleForm.g_under_discount == 1) {
+        if (this.ruleForm.g_discount_start_time >= this.ruleForm.g_discount_end_time) {
+          this.$message.warning('结束时间必须大于开始时间')
+          return
+        }
+      }
+    },
+    checkSpecifyValue() { // 检查规则值空，或重复
+      if (this.specifyList.length == 0) { return }
+
+      var list = this.specifyList
+      var specify = [] // 规格名称集合
+      var specifyValue = [] // 规格值集合
+
+      for (var item of list) {
+        var a = item.specifyValue.trim()
+        if (!a) {
+          this.$message.warning(`请输入规格名称 或 删除空配置`)
+          break
+        } else if (!item.customOptionKey.trim()) {
+          this.$message.warning(`请选择规格 ${a} 的标识`)
+          break
+        }
+        specify.push(a)
+        var arr = []
+        for (var k of item.children) {
+          var b = k.specifyValue.trim()
+
+          if (!b) {
+            this.$message.warning(`请输入 ${a} 规格值 或 删除空配置`)
+            break
+          }
+          arr.push(b)
+        }
+        specifyValue.push(arr)
+      }
+
+      for (var i = 0; i < specify.length - 1; i++) {
+        if (specify[i] == specify[i + 1]) {
+          this.$message.warning('重复规格名称：' + specify[i])
+          return true
+        }
+      }
+
+      for (var it of specifyValue) {
+        for (var j = 0; j < it.length - 1; j++) {
+          if (it[j] == it[j + 1]) {
+            this.$message.warning('重复规格值：' + it[j] + ', 请重置')
+            return true
+          }
+        }
+      }
+
+      for (var items of this.specifyList) {
+        if (item.children.length == 0) {
+          this.$message.warning(`请设置规格 ${items.specifyValue} 的规格值`)
+          return true
+        }
+      }
+    },
+    addRefGid() { // 添加关联商品
+      addRefGoods(this.token, this.refGid, this.gid).then(response => {
+        this.ruleForm.gidRefList.push(response.data.gid)
+      })
     }
   }
 }
@@ -1006,4 +1079,5 @@ export default {
   input[type="number"]{
     -moz-appearance: textfield;
   }
+  .price-stock-table{width: 80%; margin: 15px; padding: 20px; box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);border-radius: 4px;}
 </style>
