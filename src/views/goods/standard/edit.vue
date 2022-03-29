@@ -6,7 +6,8 @@
           <h2 v-if="editType == 'create'">新增商品</h2>
           <h2 v-else>编辑商品</h2>
         </el-col>
-        <el-col :span="6" :offset="12"><el-button type="primary" @click="onSubmit()">保存</el-button></el-col>
+        <el-col :span="2" :offset="10"><el-button type="info" @click="goBack()">返回列表</el-button></el-col>
+        <el-col :span="1"><el-button type="primary" @click="onSubmit()">保存</el-button></el-col>
       </el-row>
     </el-header>
     <el-main>
@@ -481,7 +482,7 @@ export default {
       this.ruleForm.specifyList = this.specifyList
       this.ruleForm.priceStockList = this.priceStockList
       if (this.editType == 'edit') { this.buildePriceStockList(false) }
-      if (!this.filterSpecifyValuePrice()) { return false }
+      // if (!this.filterSpecifyValuePrice()) { return false }
 
       submitCreateOrEdit(this.token, this.ruleForm, this.editType).then(response => {
         this.$message.success(response.data)
@@ -1075,6 +1076,9 @@ export default {
         this.$message.success(response.data)
         this.ruleForm.gidRefList.splice(scope.$index)
       })
+    },
+    goBack() {
+      this.$router.go(-1)
     }
   }
 }
