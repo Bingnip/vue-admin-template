@@ -7,7 +7,9 @@
           <h2 v-else>编辑商品</h2>
         </el-col>
         <el-col :span="2" :offset="10"><el-button type="info" @click="goBack()">返回列表</el-button></el-col>
-        <el-col :span="1"><el-button type="primary" @click="onSubmit()">保存</el-button></el-col>
+        <el-col :span="1">
+          <el-button type="primary" @click="onSubmit()">保存</el-button>
+        </el-col>
       </el-row>
     </el-header>
     <el-main>
@@ -69,13 +71,13 @@
               <div v-if="ruleForm.g_under_discount == '1'">
                 <el-col :span="5">
                   <el-form-item prop="g_discount_start_time">
-                    <el-date-picker v-model="ruleForm.g_discount_start_time" type="datetime" placeholder="开始日期" style="width: 100%;" value-format="timestamp" @blur="checkDiscountTime()" />
+                    <el-date-picker v-model="ruleForm.g_discount_start_time" type="datetime" placeholder="开始日期" style="width: 100%;" @blur="checkDiscountTime()" />
                   </el-form-item>
                 </el-col>
                 <el-col class="line" :span="1" :offset="1">~</el-col>
                 <el-col :span="5">
                   <el-form-item prop="g_discount_end_time">
-                    <el-date-picker v-model="ruleForm.g_discount_end_time" type="datetime" placeholder="结束时间" style="width: 100%;" value-format="timestamp" @blur="checkDiscountTime()" />
+                    <el-date-picker v-model="ruleForm.g_discount_end_time" type="datetime" placeholder="结束时间" style="width: 100%;" @blur="checkDiscountTime()" />
                   </el-form-item>
                 </el-col>
               </div>
@@ -333,7 +335,9 @@ export default {
       categoryList: null,
       categoryDefaultProps: {
         children: 'children',
-        label: 'name'
+        label: function(data) {
+          return data.name + ' ' + data.desc
+        }
       },
       tempImgIndex: { // 规格中图片的临时下标
         index: 0,
@@ -402,8 +406,9 @@ export default {
     getGoodsInfo() { // 如果是编辑就获取商品信息
       getGoodsInfo(this.token, this.ruleForm.gid).then(response => {
         var ret = response.data
-        var goodsInfo = ret.goodsInfo
+        this.setDefaultCheckedTree(ret.categoryInfo)
 
+        var goodsInfo = ret.goodsInfo
         this.specifyList = ret.attrInfo
         this.priceStockList = ret.priceStockInfo
         this.ruleForm.gidRefList = ret.refInfo
@@ -418,14 +423,14 @@ export default {
         this.ruleForm.g_hot = goodsInfo.g_hot == 1
         this.ruleForm.is_special_offer = goodsInfo.is_special_offer == 1
         this.ruleForm.g_under_discount = goodsInfo.g_under_discount
-        this.ruleForm.g_discount_start_time = new Date(createdTimeFormat(goodsInfo.g_discount_start_time))
-        this.ruleForm.g_discount_end_time = new Date(createdTimeFormat(goodsInfo.g_discount_end_time))
+        this.ruleForm.g_discount_start_time = goodsInfo.g_discount_start_time == 0 ? '' : new Date(createdTimeFormat(goodsInfo.g_discount_start_time))
+        this.ruleForm.g_discount_end_time = goodsInfo.g_discount_end_time == 0 ? '' : new Date(createdTimeFormat(goodsInfo.g_discount_end_time))
         this.ruleForm.g_add_time = new Date(createdTimeFormat(goodsInfo.g_add_time, 'date'))
         this.ruleForm.g_desc = goodsInfo.g_desc
         this.ruleForm.g_meta_title = goodsInfo.g_meta_title
         this.ruleForm.g_meta_keywords = goodsInfo.g_meta_keywords
+        this.ruleForm.throughLinePrice = goodsInfo.default_price
 
-        this.setDefaultCheckedTree(ret.categoryInfo)
         this.priceStockBatchBar()
         this.countAllStock()
       })
@@ -461,6 +466,10 @@ export default {
       } else if (this.ruleForm.categoryListChecked.length == 0) {
         this.$message.warning('选择分类')
         return false
+      } else if (!this.checkThrougnLinePrice()) {
+        return false
+      } else if (!this.checkDiscountTime()) {
+        return false
       }
 
       return true
@@ -480,16 +489,25 @@ export default {
       return true
     },
     onSubmit() {
-      if (!this.filterSubmitData()) { return false }
+      if (!this.filterSubmitData()) {
+        return false
+      }
       this.ruleForm.specifyList = this.specifyList
       this.ruleForm.priceStockList = this.priceStockList
       // if (this.editType == 'edit') { this.buildePriceStockList(false) }
-
-      if (!this.checkSpecifyValue()) { return false }
-      if (!this.filterSpecifyValuePrice()) { return false }
+      if (!this.checkSpecifyValue()) {
+        return false
+      }
+      if (!this.filterSpecifyValuePrice()) {
+        return false
+      }
       submitCreateOrEdit(this.token, this.ruleForm, this.editType).then(response => {
         this.$message.success(response.data)
-        this.$router.go(0)
+        if (this.editType == 'edit') {
+          this.$router.go(0)
+        } else {
+          this.$router.push(`../standard_goods`)
+        }
       })
     },
     priceStockBatchBar() { // 组装价格库存批处理的数据
@@ -694,6 +712,10 @@ export default {
       }
     },
     addSpecifyValue(index) { // 添加规格值
+      if (this.specifyList[index].children.length > 10) {
+        this.$message.warning('规格已超 10 个')
+        return false
+      }
       this.newSpcifyValueIndex += 1
       var v = { id: this.newSpcifyValueIndex, specifyValue: '', order: '', img: '', default: 0, deleted: 0, isUploading: false }
       this.specifyList[index].children.push(v)
@@ -924,9 +946,9 @@ export default {
       }
     },
     setDefaultCheckedTree(list) { // 动态选中赋值分类tree
-      list.forEach(e => {
-        this.ruleForm.categoryListChecked.push(e.c_id)
-      })
+      for (var i of list) {
+        this.ruleForm.categoryListChecked.push(i.c_id)
+      }
       return true
     },
     editUrlKey() { // 修改url-key
@@ -1014,12 +1036,24 @@ export default {
       this.ruleForm.g_meta_keywords = cateInfo.substring(0, cateInfo.length - 1)
     },
     checkDiscountTime() { // 检查活动起止时间
+      if (this.ruleForm.g_under_discount == 1) {
+        if (!this.ruleForm.g_discount_start_time) {
+          this.$message.warning('促销开始时间必填')
+          return false
+        } else if (!this.ruleForm.g_discount_end_time) {
+          this.$message.warning('促销结束时间必填')
+          return false
+        }
+      }
+
       if (this.ruleForm.g_discount_start_time && this.ruleForm.g_discount_end_time && this.ruleForm.g_under_discount == 1) {
         if (this.ruleForm.g_discount_start_time >= this.ruleForm.g_discount_end_time) {
           this.$message.warning('结束时间必须大于开始时间')
-          return
+          return false
         }
       }
+
+      return true
     },
     checkSpecifyValue() { // 检查规则值空，或重复
       if (this.specifyList.length == 0) { return }
@@ -1110,6 +1144,17 @@ export default {
     },
     batchBarSelect() { // batchBar触发强制刷新
       this.$forceUpdate()
+    },
+    checkThrougnLinePrice() { // 检查划线价是否高于规格最高价
+      if (parseFloat(this.ruleForm.throughLinePrice) > 0) {
+        for (var i of this.priceStockList) {
+          if (parseFloat(this.ruleForm.throughLinePrice) <= parseFloat(i.price)) {
+            this.$message.warning('划线价未超过规格最高价')
+            return false
+          }
+        }
+      }
+      return true
     }
   }
 }
