@@ -94,7 +94,7 @@
           <el-table-column fixed="right" label="操作" width="120" align="center">
             <template slot-scope="scope">
               <el-button type="primary" icon="el-icon-edit" circle size="mini" @click="edit(scope.row.g_id)" />
-              <el-button type="danger" icon="el-icon-delete" circle size="mini" @click="deleteGoods(scope.row.g_id, scope.$index + 1)" />
+              <el-button type="danger" icon="el-icon-delete" circle size="mini" @click="deleteGoods(scope.row.g_id, scope)" />
             </template>
           </el-table-column>
         </el-table>
@@ -150,7 +150,7 @@ export default {
       this.$router.push(`standard_goods_edit/${id}`)
     },
     createGoods() {
-      this.$router.push(`standard_goods_edit`)
+      this.$router.push(`standard_goods_edit/:id`)
     },
     handleSizeChange(val) {
       this.pageSize = val
@@ -160,14 +160,15 @@ export default {
       this.currentPage = val
       this.fetchData()
     },
-    deleteGoods(gid, index) {
+    deleteGoods(gid, scope) {
       this.$confirm('确定删除？', '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'
       }).then(() => {
         deleteGoods(this.token, gid).then(() => {
-          this.tableData.splice(index, 1)
+          this.$message.success('删除成功')
+          this.tableData.splice(scope.$index)
         })
       }).catch(() => {})
     }

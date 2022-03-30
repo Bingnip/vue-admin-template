@@ -66,20 +66,21 @@ export const constantRoutes = [
         path: 'standard_goods_edit/:id',
         name: 'standard_goods_edit',
         component: () => import('@/views/goods/standard/edit'),
-        meta: { title: '新增标品', icon: 'el-icon-notebook-2' }
+        meta: { title: '新增标品', icon: 'el-icon-notebook-2' },
+        hidden: true
       },
       {
         path: 'standard_goods',
         name: 'standard_goods',
         component: () => import('@/views/goods/standard/index'),
         meta: { title: '标品', icon: 'el-icon-notebook-1' }
-      },
-      {
-        path: 'custom_goods',
-        name: 'custom_goods',
-        component: () => import('@/views/goods/custom/index'),
-        meta: { title: '定制品', icon: 'el-icon-notebook-2' }
       }
+      // {
+      //   path: 'custom_goods',
+      //   name: 'custom_goods',
+      //   component: () => import('@/views/goods/custom/index'),
+      //   meta: { title: '定制品', icon: 'el-icon-notebook-2' }
+      // }
     ]
   },
 

@@ -108,6 +108,10 @@ export default {
     height: {
       type: Number,
       default: 150
+    },
+    editType: {
+      type: String,
+      default: 'create'
     }
   },
 
@@ -225,11 +229,17 @@ export default {
         type: 'warning'
       })
         .then(() => {
-          removeStandardImg(this.token, this.imgList[index].gi_id).then(() => {
+          if (this.editType == 'edit') {
+            removeStandardImg(this.token, this.imgList[index].gi_id).then(() => {
+              this.imgList = this.imgList.filter((v, i) => {
+                return i !== index
+              })
+            })
+          } else {
             this.imgList = this.imgList.filter((v, i) => {
               return i !== index
             })
-          })
+          }
         })
         .catch(() => {})
     },
