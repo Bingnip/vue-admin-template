@@ -6,9 +6,11 @@
           <h2 v-if="editType == 'create'">新增商品</h2>
           <h2 v-else>编辑商品</h2>
         </el-col>
-        <el-col :span="2" :offset="10"><el-button type="info" @click="goBack()">返回列表</el-button></el-col>
-        <el-col :span="1">
-          <el-button type="primary" @click="onSubmit()">保存</el-button>
+        <el-col :span="2" :offset="10" class="submit-button">
+          <el-button type="info" plain size="medium" @click="goBack()">返回列表</el-button>
+        </el-col>
+        <el-col :span="1" class="submit-button" style="padding-left: 0;">
+          <el-button type="primary" size="medium" @click="onSubmit()">保存</el-button>
         </el-col>
       </el-row>
     </el-header>
@@ -21,31 +23,31 @@
               <el-col :span="12">
                 <el-input v-model="ruleForm.g_sku" />
               </el-col>
-              <el-col :span="12" class="font-color-second">（商品唯一编号，将与内网关联）</el-col>
+              <el-col :span="12" class="font-color-second desc-padding">（商品唯一编号，将与内网关联）</el-col>
             </el-form-item>
             <el-form-item label="商品名称：" prop="g_name">
               <el-col :span="12">
                 <el-input v-model="ruleForm.g_name" @blur="gnameToUrlkey()" />
               </el-col>
-              <el-col :span="12" class="font-color-second">（该字段为网站前端展示的商品名称，需填写法语)</el-col>
+              <el-col :span="12" class="font-color-second desc-padding">（该字段为网站前端展示的商品名称，需填写法语)</el-col>
             </el-form-item>
             <el-form-item label="URL KEY：" prop="g_alias">
               <el-col :span="12">
                 <el-input v-model="ruleForm.g_alias" readonly />
               </el-col>
-              <el-col :span="12"><el-button v-if="ruleForm.g_alias != ''" type="primary" size="small" @click="editUrlKey()">修改</el-button></el-col>
+              <el-col :span="12" class="desc-padding"><el-button v-if="ruleForm.g_alias != ''" type="primary" size="small" @click="editUrlKey()">修改</el-button></el-col>
             </el-form-item>
             <el-form-item label="克重：" prop="g_weight">
               <el-col :span="12">
                 <el-input v-model="ruleForm.g_weight" />
               </el-col>
-              <el-col :span="12" class="font-color-second">（需填写单位，例如：300g/㎡）</el-col>
+              <el-col :span="12" class="font-color-second desc-padding">（需填写单位，例如：300g/㎡）</el-col>
             </el-form-item>
             <el-form-item v-if="ruleForm.g_alias != '' && editType == 'edit'" label="重定向URL：" prop="g_url">
               <el-col :span="12">
                 <el-input v-model="ruleForm.g_alias" disabled />
               </el-col>
-              <el-col :span="12"><el-button type="danger" size="small" @click="setRedirect()">301重定向设置</el-button></el-col>
+              <el-col :span="12" class="desc-padding"><el-button type="danger" size="small" @click="setRedirect()">301重定向设置</el-button></el-col>
             </el-form-item>
             <el-form-item label="状态：" prop="g_status">
               <el-radio v-model="ruleForm.g_status" label="1">上架中</el-radio>
@@ -55,7 +57,7 @@
               <el-col :span="4">
                 <el-input v-model="ruleForm.g_order" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
               </el-col>
-              <el-col :span="10" class="font-color-second">（越大越靠前)</el-col>
+              <el-col :span="10" class="font-color-second desc-padding">（越大越靠前）</el-col>
             </el-form-item>
             <el-form-item label="销售标识：" prop="g_recommended">
               <el-checkbox v-model="ruleForm.g_recommended">推荐</el-checkbox>
@@ -86,7 +88,7 @@
               <el-col :span="6">
                 <el-date-picker v-model="ruleForm.g_add_time" type="date" placeholder="添加日期" style="width: 100%;" />
               </el-col>
-              <el-col :span="18" class="font-color-second">
+              <el-col :span="18" class="font-color-second desc-padding">
                 （前台显示的添加时间）
               </el-col>
             </el-form-item>
@@ -179,13 +181,13 @@
           <el-tab-pane label="价格库存">
             <template v-if="specifyList.length > 0">
               <el-row>
-                <el-col :span="2" :offset="1"><el-button type="primary" size="small" @click="buildePriceStockList">重置价格表</el-button></el-col>
-                <el-col :span="3"><el-button type="primary" size="small" @click="batchFillTable">批量填充</el-button></el-col>
-                <el-col :span="15">
+                <el-col :span="8">
                   <el-form-item class="font-color-second">
-                    在标题栏中输入或选择内容可以进行筛选和批量填充
+                    （在标题栏中输入或选择内容可以进行筛选和批量填充）
                   </el-form-item>
                 </el-col>
+                <el-col :span="2" :offset="1"><el-button type="primary" size="small" @click="buildePriceStockList">重置价格表</el-button></el-col>
+                <el-col :span="3"><el-button type="primary" size="small" @click="batchFillTable">批量填充</el-button></el-col>
               </el-row>
               <table v-if="priceStockTableBatch.specify.length > 0" class="price-stock-table" border="0" cellspacing="0" cellpadding="0">
                 <tr class="price-stock-table-header price-stock-table-th">
@@ -218,12 +220,12 @@
               <el-col :span="1">
                 <el-form-item label="划线价：" />
               </el-col>
-              <el-col :span="7">
+              <el-col :span="5">
                 <el-form-item>
                   <el-input v-model="ruleForm.throughLinePrice" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
                 </el-form-item>
               </el-col>
-              <el-col :span="16">
+              <el-col :span="6">
                 <el-form-item class="font-color-second">
                   （未编辑则前端不显示划线价及折扣比例）
                 </el-form-item>
@@ -254,17 +256,17 @@
             </el-form-item>
             <el-form-item label="META标题：">
               <el-col :span="12">
-                <el-input v-model="ruleForm.g_meta_title" type="textarea" prop="g_meta_title" />
+                <el-input v-model="ruleForm.g_meta_title" type="textarea" prop="g_meta_title" rows="5" />
               </el-col>
-              <el-col :span="12">
+              <el-col :span="12" class="desc-padding">
                 <el-button type="primary" size="small" @click="fillMetaTitle()">填充商品名称</el-button>
               </el-col>
             </el-form-item>
             <el-form-item label="META关键词：">
               <el-col :span="12">
-                <el-input v-model="ruleForm.g_meta_keywords" type="textarea" prop="g_meta_keywords" />
+                <el-input v-model="ruleForm.g_meta_keywords" type="textarea" prop="g_meta_keywords" rows="5" />
               </el-col>
-              <el-col :span="12">
+              <el-col :span="12" class="desc-padding">
                 <el-button type="primary" size="small" @click="fillMetaKeywords()">填充商品分类信息</el-button>
               </el-col>
             </el-form-item>
@@ -275,7 +277,7 @@
               <el-col :span="12">
                 <el-input v-model="refGid" placeholder="输入ID" />
               </el-col>
-              <el-col :span="4">
+              <el-col :span="4" class="desc-padding">
                 <el-button type="primary" size="small" @click="addRefGid">加入</el-button>
               </el-col>
             </el-form-item>
@@ -1195,6 +1197,8 @@ export default {
 </script>
 
 <style scope>
+  .submit-button { padding-top: 18px; }
+  .desc-padding { padding-left: 15px; }
   .font-color-second{
     color: #909399
   }
