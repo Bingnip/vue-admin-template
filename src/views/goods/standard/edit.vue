@@ -45,7 +45,7 @@
             </el-form-item>
             <el-form-item v-if="ruleForm.g_alias != '' && editType == 'edit'" label="重定向URL：" prop="g_url">
               <el-col :span="12">
-                <el-input v-model="ruleForm.g_alias" disabled />
+                <el-input v-model="ruleForm.url_rewrite" disabled />
               </el-col>
               <el-col :span="12" class="desc-padding"><el-button type="danger" size="small" @click="setRedirect()">301重定向设置</el-button></el-col>
             </el-form-item>
@@ -363,6 +363,7 @@ export default {
         g_new: false,
         g_hot: false,
         is_special_offer: false,
+        url_rewrite: '',
         g_under_discount: '0',
         g_add_time: '',
         g_discount_start_time: '',
@@ -411,6 +412,7 @@ export default {
       this.loadingHandle('ruleForm')
       getGoodsInfo(this.token, this.ruleForm.gid).then(response => {
         var ret = response.data
+        this.ruleForm.url_rewrite = ret.urlRewrite.target_path
         this.setDefaultCheckedTree(ret.categoryInfo)
 
         var goodsInfo = ret.goodsInfo
@@ -1021,7 +1023,7 @@ export default {
     },
     setRedirect() { // 修改301重定向
       this.getRedirect()
-      this.$prompt(' request_path:   ' + this.ruleForm.g_alias, '301重定向', {
+      this.$prompt(' request_path:   ' + this.ruleForm.url_rewrite, '301重定向', {
       }).then(({ value }) => {
         if (!value) {
           this.$message.warning('请输入 target_path')
@@ -1034,7 +1036,7 @@ export default {
         }
 
         setRedirectUrl(this.token, value, this.editRedirect.redirectId).then(response => {
-          this.ruleForm.g_alias = value
+          this.ruleForm.url_rewrite = value
           this.$message.success(response.data.msg)
         })
       })
@@ -1191,6 +1193,18 @@ export default {
     },
     handleRowClick(data, node) {
       node.checked = !(node.checked)
+
+      const arr = this.ruleForm.categoryListChecked
+      // 已经勾选，则再次取消，没有勾选，则勾选
+      if (arr.some(item => item === data.c_id)) {
+        arr.splice(arr.indexOf(data.id), 1)
+      } else {
+        arr.push(data.c_id)
+      }
+      this.ruleForm.categoryListChecked = arr
+      this.$refs.tree.setCheckedKeys(arr)
+
+      console.log(JSON.stringify(this.ruleForm.categoryListChecked))
     }
   }
 }

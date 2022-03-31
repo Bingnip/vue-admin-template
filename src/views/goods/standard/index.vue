@@ -9,7 +9,7 @@
           v-loading="listLoading"
           :row-style="{height:0+'px'}"
           :cell-style="{padding:0+'px'}"
-          header-cell-style="background: rgb(244, 244, 245, 0.6);"
+          :header-cell-style="headerStyleClass"
           :data="tableData"
           element-loading-text="Loading"
           height="780"
@@ -211,6 +211,9 @@ export default {
     getCurrentTime() {
       var timestamp = Date.parse(new Date())
       this.currentTime = timestamp / 1000
+    },
+    headerStyleClass() {
+      return 'background: rgb(244, 244, 245, 0.6);'
     }
   }
 }
