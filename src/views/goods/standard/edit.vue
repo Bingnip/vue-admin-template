@@ -13,7 +13,7 @@
       </el-row>
     </el-header>
     <el-main>
-      <el-form ref="ruleForm" :label-position="labelPosition" label-width="100px" :model="ruleForm" :rules="rules">
+      <el-form id="ruleForm" ref="ruleForm" :label-position="labelPosition" label-width="100px" :model="ruleForm" :rules="rules">
 
         <el-tabs :tab-position="tabPosition" style="height: auto;">
           <el-tab-pane label="基本信息">
@@ -21,25 +21,25 @@
               <el-col :span="12">
                 <el-input v-model="ruleForm.g_sku" />
               </el-col>
-              <el-col :span="12">（商品唯一编号，将与内网关联）</el-col>
+              <el-col :span="12" class="font-color-second">（商品唯一编号，将与内网关联）</el-col>
             </el-form-item>
             <el-form-item label="商品名称：" prop="g_name">
               <el-col :span="12">
                 <el-input v-model="ruleForm.g_name" @blur="gnameToUrlkey()" />
               </el-col>
-              <el-col :span="12">（该字段为网站前端展示的商品名称，需填写法语)</el-col>
+              <el-col :span="12" class="font-color-second">（该字段为网站前端展示的商品名称，需填写法语)</el-col>
             </el-form-item>
             <el-form-item label="URL KEY：" prop="g_alias">
               <el-col :span="12">
                 <el-input v-model="ruleForm.g_alias" readonly />
               </el-col>
-              <el-col :span="12"><el-button v-if="ruleForm.g_alias != '' && editType == 'edit'" type="primary" size="small" @click="editUrlKey()">修改</el-button></el-col>
+              <el-col :span="12"><el-button v-if="ruleForm.g_alias != ''" type="primary" size="small" @click="editUrlKey()">修改</el-button></el-col>
             </el-form-item>
             <el-form-item label="克重：" prop="g_weight">
               <el-col :span="12">
                 <el-input v-model="ruleForm.g_weight" />
               </el-col>
-              <el-col :span="12">（需填写单位，例如：300g/㎡）</el-col>
+              <el-col :span="12" class="font-color-second">（需填写单位，例如：300g/㎡）</el-col>
             </el-form-item>
             <el-form-item v-if="ruleForm.g_alias != '' && editType == 'edit'" label="重定向URL：" prop="g_url">
               <el-col :span="12">
@@ -55,7 +55,7 @@
               <el-col :span="4">
                 <el-input v-model="ruleForm.g_order" type="number" @mousewheel.native.prevent @keyup.native="prevent($event)" />
               </el-col>
-              <el-col :span="10">（越大越靠前)</el-col>
+              <el-col :span="10" class="font-color-second">（越大越靠前)</el-col>
             </el-form-item>
             <el-form-item label="销售标识：" prop="g_recommended">
               <el-checkbox v-model="ruleForm.g_recommended">推荐</el-checkbox>
@@ -86,7 +86,7 @@
               <el-col :span="6">
                 <el-date-picker v-model="ruleForm.g_add_time" type="date" placeholder="添加日期" style="width: 100%;" />
               </el-col>
-              <el-col :span="18">
+              <el-col :span="18" class="font-color-second">
                 （前台显示的添加时间）
               </el-col>
             </el-form-item>
@@ -182,7 +182,7 @@
                 <el-col :span="2" :offset="1"><el-button type="primary" size="small" @click="buildePriceStockList">重置价格表</el-button></el-col>
                 <el-col :span="3"><el-button type="primary" size="small" @click="batchFillTable">批量填充</el-button></el-col>
                 <el-col :span="15">
-                  <el-form-item>
+                  <el-form-item class="font-color-second">
                     在标题栏中输入或选择内容可以进行筛选和批量填充
                   </el-form-item>
                 </el-col>
@@ -224,7 +224,7 @@
                 </el-form-item>
               </el-col>
               <el-col :span="16">
-                <el-form-item>
+                <el-form-item class="font-color-second">
                   （未编辑则前端不显示划线价及折扣比例）
                 </el-form-item>
               </el-col>
@@ -404,6 +404,7 @@ export default {
   },
   methods: {
     getGoodsInfo() { // 如果是编辑就获取商品信息
+      this.loadingHandle('ruleForm')
       getGoodsInfo(this.token, this.ruleForm.gid).then(response => {
         var ret = response.data
         this.setDefaultCheckedTree(ret.categoryInfo)
@@ -431,6 +432,7 @@ export default {
         this.ruleForm.g_meta_keywords = goodsInfo.g_meta_keywords
         this.ruleForm.throughLinePrice = goodsInfo.default_price
 
+        this.loading.close()
         this.priceStockBatchBar()
         this.countAllStock()
       })
@@ -471,6 +473,11 @@ export default {
       } else if (!this.checkDiscountTime()) {
         return false
       }
+
+      this.ruleForm.g_recommended = this.ruleForm.g_recommended == true ? 1 : 0
+      this.ruleForm.g_new = this.ruleForm.g_new == true ? 1 : 0
+      this.ruleForm.g_hot = this.ruleForm.g_hot == true ? 1 : 0
+      this.ruleForm.is_special_offer = this.ruleForm.is_special_offer == true ? 1 : 0
 
       return true
     },
@@ -977,13 +984,30 @@ export default {
         })
       })
     },
+    loadingHandle(type) {
+      switch (type) {
+        case 'redirect':
+          this.loading = Loading.service({
+            text: '获取中...',
+            spinner: 'el-icon-loading',
+            background: 'rgba(0, 0, 0, 0.2)'
+          })
+          break
+        case 'ruleForm':
+          this.loading = Loading.service({
+            lock: true,
+            text: '加载中...',
+            spinner: 'el-icon-loading',
+            background: 'rgba(0, 0, 0, 0.2)',
+            target: document.querySelector('#ruleForm')
+          })
+          break
+        default:
+          break
+      }
+    },
     getRedirect() { // 获取有效值
-      this.loading = Loading.service({
-        text: '获取中...',
-        spinner: 'el-icon-loading',
-        background: 'rgba(0, 0, 0, 0.2)'
-      })
-
+      this.loadingHandle('redirect')
       getAlias(this.token, this.ruleForm.gid).then(response => {
         this.editRedirect.redirectId = response.data.r_id
         this.editRedirect.redirectUrl = response.data.redirect
@@ -1163,6 +1187,9 @@ export default {
 </script>
 
 <style scope>
+  .font-color-second{
+    color: #909399
+  }
   .addSpecify {
     font-size: 14px; color: #409EFF; cursor: pointer;
   }

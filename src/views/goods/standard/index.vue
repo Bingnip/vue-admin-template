@@ -47,8 +47,23 @@
               <span v-else style="color:#F56C6C;">已下架</span>
             </template>
           </el-table-column>
-          <el-table-column label="促销倒计时" width="90" align="center">
-            <template />
+          <el-table-column label="促销倒计时" width="95" align="center">
+            <template slot-scope="scope">
+              <span v-if="scope.row.g_under_discount == 0" style="color:#F56C6C;">否</span>
+              <template v-else>
+                <div v-if="scope.row.g_discount_end_time < currentTime" style="color: #909399">已结束</div>
+                <div v-else-if="currentTime < scope.row.g_discount_start_time">
+                  <span style="color: #409EFF">未开始</span>
+                  <br> 开始时间 <br>
+                  {{ scope.row.g_discount_start_time | parseTime('{y}-{m}-{d} {h}:{i}:{s}') }}
+                </div>
+                <div v-else-if="scope.row.g_discount_start_time <= currentTime && currentTime <= scope.row.g_discount_end_time">
+                  <span style="color: #67C23A">进行中</span>
+                  <br> 结束时间 <br>
+                  {{ scope.row.g_discount_end_time | parseTime('{y}-{m}-{d} {h}:{i}:{s}') }}
+                </div>
+              </template>
+            </template>
           </el-table-column>
           <el-table-column label="推荐" width="90" align="center">
             <template slot-scope="scope">
@@ -124,6 +139,7 @@ export default {
   },
   data() {
     return {
+      currentTime: null,
       currentPage: 1,
       totalCount: 0,
       pageSize: 20,
@@ -136,6 +152,9 @@ export default {
   created() {
     this.token = getToken()
     this.fetchData()
+  },
+  mounted() {
+    this.getCurrentTime()
   },
   methods: {
     fetchData() {
@@ -172,6 +191,10 @@ export default {
           this.tableData.splice(scope.$index, 1)
         })
       }).catch(() => {})
+    },
+    getCurrentTime() {
+      var timestamp = Date.parse(new Date())
+      this.currentTime = timestamp / 1000
     }
   }
 }
