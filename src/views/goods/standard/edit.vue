@@ -13,7 +13,7 @@
       </el-row>
     </el-header>
     <el-main>
-      <el-form id="ruleForm" ref="ruleForm" :label-position="labelPosition" label-width="100px" :model="ruleForm" :rules="rules">
+      <el-form ref="ruleForm" class="ruleForm" :label-position="labelPosition" label-width="100px" :model="ruleForm" :rules="rules">
 
         <el-tabs :tab-position="tabPosition" style="height: auto;">
           <el-tab-pane label="基本信息">
@@ -243,7 +243,7 @@
           </el-tab-pane>
 
           <el-tab-pane label="分类选择">
-            <el-tree ref="tree" :data="categoryList" show-checkbox default-expand-all node-key="c_id" highlight-current :props="categoryDefaultProps" :default-checked-keys="ruleForm.categoryListChecked" @check="handleCurrentChecked" />
+            <el-tree ref="tree" :data="categoryList" show-checkbox default-expand-all node-key="c_id" highlight-current :props="categoryDefaultProps" :default-checked-keys="ruleForm.categoryListChecked" @node-click="handleRowClick" @check="handleCurrentChecked" />
           </el-tab-pane>
 
           <el-tab-pane label="内容信息">
@@ -400,6 +400,8 @@ export default {
 
     if (this.editType == 'edit') {
       this.getImgDetail()
+    } else {
+      this.getCurrentDate()
     }
   },
   methods: {
@@ -499,7 +501,7 @@ export default {
       if (!this.filterSubmitData()) { return false }
       this.ruleForm.specifyList = this.specifyList
       this.ruleForm.priceStockList = this.priceStockList
-      // if (this.editType == 'edit') { this.buildePriceStockList(false) }
+      if (this.editType == 'edit') { this.buildePriceStockList(false) }
       if (!this.checkSpecifyValue()) { return false }
       if (!this.filterSpecifyValuePrice()) { return false }
 
@@ -999,7 +1001,7 @@ export default {
             text: '加载中...',
             spinner: 'el-icon-loading',
             background: 'rgba(0, 0, 0, 0.2)',
-            target: document.querySelector('#ruleForm')
+            target: document.querySelector('.ruleForm')
           })
           break
         default:
@@ -1162,7 +1164,7 @@ export default {
     delRecommendGid(id, scope) { // 删除关联产品
       delRefGoods(this.token, id).then(response => {
         this.$message.success(response.data)
-        this.ruleForm.gidRefList.splice(scope.$index)
+        this.ruleForm.gidRefList.splice(scope.$index, 1)
       })
     },
     goBack() {
@@ -1181,6 +1183,12 @@ export default {
         }
       }
       return true
+    },
+    getCurrentDate() {
+      this.ruleForm.g_add_time = Date.parse(new Date())
+    },
+    handleRowClick(data, node) {
+      node.checked = !(node.checked)
     }
   }
 }

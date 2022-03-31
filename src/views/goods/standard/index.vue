@@ -5,7 +5,18 @@
         <el-button type="primary" @click="createGoods()">新增</el-button>
       </el-header>
       <el-main>
-        <el-table v-loading="listLoading" :data="tableData" element-loading-text="Loading" height="780" border fit highlight-current-row>
+        <el-table
+          v-loading="listLoading"
+          :row-style="{height:0+'px'}"
+          :cell-style="{padding:0+'px'}"
+          header-cell-style="background: rgb(244, 244, 245, 0.6);"
+          :data="tableData"
+          element-loading-text="Loading"
+          height="780"
+          border
+          fit
+          highlight-current-row
+        >
           <el-table-column fixed="left" align="center" label="商品ID" width="95">
             <template slot-scope="scope">
               {{ scope.row.g_id }}
@@ -23,12 +34,12 @@
           </el-table-column>
           <el-table-column label="URL KEY" width="180" align="center">
             <template slot-scope="scope">
-              {{ scope.row.g_alias }}
+              <el-link type="primary" :href="domainUrl + scope.row.g_alias" target="_blank">{{ scope.row.g_alias }}</el-link>
             </template>
           </el-table-column>
-          <el-table-column label="图片" width="120" align="center">
+          <el-table-column label="图片" width="120" align="center" vertical-align="middle">
             <template slot-scope="scope">
-              <img :src="cdnPrefix + scope.row.g_img" width="90" height="90" alt="">
+              <img :src="cdnPrefix + scope.row.g_img" width="90" height="90" style="margin-top: 7px;" alt="">
             </template>
           </el-table-column>
           <el-table-column label="价格" width="90" align="center">
@@ -36,12 +47,12 @@
               {{ scope.row.g_price }}
             </template>
           </el-table-column>
-          <el-table-column label="置顶号" width="90" align="center">
+          <el-table-column label="置顶号" width="55" align="center">
             <template slot-scope="scope">
               {{ scope.row.g_order }}
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="90" align="center">
+          <el-table-column label="状态" width="70" align="center">
             <template slot-scope="scope">
               <span v-if="scope.row.g_status == 1" style="color:#67C23A;">上架中</span>
               <span v-else style="color:#F56C6C;">已下架</span>
@@ -65,48 +76,48 @@
               </template>
             </template>
           </el-table-column>
-          <el-table-column label="推荐" width="90" align="center">
+          <el-table-column label="推荐" width="40" align="center">
             <template slot-scope="scope">
               <span v-if="scope.row.g_recommended == 1" style="color:#67C23A;">是</span>
               <span v-else>否</span>
             </template>
           </el-table-column>
-          <el-table-column label="新品" width="90" align="center">
+          <el-table-column label="新品" width="40" align="center">
             <template slot-scope="scope">
               <span v-if="scope.row.g_new == 1" style="color:#67C23A;">是</span>
               <span v-else>否</span>
             </template>
           </el-table-column>
-          <el-table-column label="热门" width="90" align="center">
+          <el-table-column label="热门" width="40" align="center">
             <template slot-scope="scope">
               <span v-if="scope.row.g_hot == 1" style="color:#67C23A;">是</span>
               <span v-else>否</span>
             </template>
           </el-table-column>
-          <el-table-column label="浏览数" width="90" align="center">
+          <el-table-column label="浏览数" width="55" align="center">
             <template slot-scope="scope">
               {{ scope.row.g_views }}
             </template>
           </el-table-column>
-          <el-table-column label="加购数" width="90" align="center">
+          <el-table-column label="加购数" width="55" align="center">
             <template slot-scope="scope">
               {{ scope.row.add_click }}
             </template>
           </el-table-column>
-          <el-table-column label="自然人气值" width="90" align="center">
+          <el-table-column label="自然人气值" width="70" align="center">
             <template />
           </el-table-column>
-          <el-table-column label="修改时间" width="120" align="center">
+          <el-table-column label="修改时间" width="100" align="center">
             <template slot-scope="{row}">
               <span>{{ row.g_last_time | parseTime('{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="创建时间" width="120" align="center">
+          <el-table-column label="创建时间" width="100" align="center">
             <template slot-scope="{row}">
               <span>{{ row.g_add_time | parseTime('{y}-{m}-{d}') }}</span>
             </template>
           </el-table-column>
-          <el-table-column fixed="right" label="操作" width="120" align="center">
+          <el-table-column fixed="right" label="操作" align="center">
             <template slot-scope="scope">
               <el-button type="primary" icon="el-icon-edit" circle size="mini" @click="edit(scope.row.g_id)" />
               <el-button type="danger" icon="el-icon-delete" circle size="mini" @click="deleteGoods(scope.row.g_id, scope)" />
@@ -120,6 +131,7 @@
         :page-size="pageSize"
         layout="total, sizes, prev, pager, next, jumper"
         :total="totalCount"
+        style="margin-top: 10px"
         @size-change="handleSizeChange"
         @current-change="handleCurrentChange"
       />
@@ -139,6 +151,9 @@ export default {
   },
   data() {
     return {
+      height: 40,
+      padding: 15,
+      domainUrl: null,
       currentTime: null,
       currentPage: 1,
       totalCount: 0,
@@ -161,6 +176,7 @@ export default {
       this.listLoading = true
       getList(this.token, this.pageSize, this.currentPage).then(response => {
         this.tableData = response.data.list
+        this.domainUrl = response.data.domain
         this.totalCount = parseInt(response.data.total)
         this.listLoading = false
       })
@@ -201,5 +217,5 @@ export default {
 </script>
 
 <style scoped>
-
+  .el-main { padding: 0 !important}
 </style>
