@@ -395,8 +395,8 @@ export default {
   created() {
     this.token = getToken()
     this.uploadUrl = this.uploadUrl + '&token=' + this.token
-    this.editTypeCheck()
     this.fetchData()
+    this.editTypeCheck()
 
     if (this.editType == 'edit') {
       this.getImgDetail()
@@ -712,7 +712,7 @@ export default {
       }
     },
     addSpecifyValue(index) { // 添加规格值
-      if (this.specifyList[index].children.length > 10) {
+      if (this.specifyList[index].children.length >= 10) {
         this.$message.warning('规格已超 10 个')
         return false
       }
@@ -949,7 +949,12 @@ export default {
       for (var i of list) {
         this.ruleForm.categoryListChecked.push(i.c_id)
       }
-      return true
+
+      this.$nextTick(function() {
+        this.$refs.tree.setCheckedKeys(this.ruleForm.categoryListChecked)
+      })
+
+      // return true
     },
     editUrlKey() { // 修改url-key
       this.$prompt(' 原url key:   ' + this.ruleForm.g_alias, '修改 URL KEY', {

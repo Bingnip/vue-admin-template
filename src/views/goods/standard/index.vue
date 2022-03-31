@@ -168,6 +168,7 @@ export default {
       }).then(() => {
         deleteGoods(this.token, gid).then(() => {
           this.$message.success('删除成功')
+          this.totalCount -= 1
           this.tableData.splice(scope.$index, 1)
         })
       }).catch(() => {})
