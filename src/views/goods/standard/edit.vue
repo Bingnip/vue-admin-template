@@ -395,7 +395,7 @@ export default {
   created() {
     this.token = getToken()
     this.uploadUrl = this.uploadUrl + '&token=' + this.token
-    this.fetchData()
+    this.getCategoryList()
     this.editTypeCheck()
 
     if (this.editType == 'edit') {
@@ -489,20 +489,17 @@ export default {
       return true
     },
     onSubmit() {
-      if (!this.filterSubmitData()) {
-        return false
-      }
+      if (!this.filterSubmitData()) { return false }
       this.ruleForm.specifyList = this.specifyList
       this.ruleForm.priceStockList = this.priceStockList
       // if (this.editType == 'edit') { this.buildePriceStockList(false) }
-      if (!this.checkSpecifyValue()) {
-        return false
-      }
-      if (!this.filterSpecifyValuePrice()) {
-        return false
-      }
+      if (!this.checkSpecifyValue()) { return false }
+      if (!this.filterSpecifyValuePrice()) { return false }
+
+      this.$loading()
       submitCreateOrEdit(this.token, this.ruleForm, this.editType).then(response => {
         this.$message.success(response.data)
+        this.$loading().close()
         if (this.editType == 'edit') {
           this.$router.go(0)
         } else {
@@ -602,7 +599,7 @@ export default {
       }
       this.priceStockList = iterator
     },
-    fetchData() {
+    getCategoryList() {
       getCategoryList(this.token).then(response => {
         this.categoryList = response.data.items
       })
@@ -778,17 +775,17 @@ export default {
       const oldPriceStockList = this.priceStockList
       this.priceStockList = []
       this.fetchPriceStockData(this.specifyList)
-      // const newPriceStockList = this.priceStockList
+      const newPriceStockList = this.priceStockList
 
       if (!oldPriceStockList) { return false }
-      // this.matchPriceStock(oldPriceStockList, newPriceStockList)
+      this.matchPriceStock(oldPriceStockList, newPriceStockList)
       this.priceStockBatchBar()
       this.countAllStock()
       this.priceStockTableBatch.price = ''
       this.priceStockTableBatch.stock = ''
       if (alert) { this.$message.success('重置成功') }
     },
-    matchPriceStock(oldList, newList) {
+    matchPriceStock(oldList, newList) { // 旧表数据回填到新表
       var newListSpecify = this.formatSpecifyList(newList)
       var oldListSpecify = this.formatSpecifyList(oldList)
       var specifyLength = newListSpecify[0].specify.length
@@ -840,7 +837,7 @@ export default {
 
       return newList
     },
-    formatSpecifyList(list) {
+    formatSpecifyList(list) { // 格式化规格的数据用于重置价库表
       if (!list) { return }
       var newList = []
 
