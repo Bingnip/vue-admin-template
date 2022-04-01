@@ -272,7 +272,7 @@
             </el-form-item>
           </el-tab-pane>
 
-          <el-tab-pane v-if="editType == 'edit'" label="关联商品">
+          <el-tab-pane v-if="editType == 'edit'" label="相关商品">
             <el-form-item label="商品ID">
               <el-col :span="12">
                 <el-input v-model="refGid" placeholder="输入ID" />
@@ -503,9 +503,11 @@ export default {
     },
     onSubmit() {
       if (!this.filterSubmitData()) { return false }
+      if (this.editType == 'edit') { this.buildePriceStockList(false) }
+
       this.ruleForm.specifyList = this.specifyList
       this.ruleForm.priceStockList = this.priceStockList
-      if (this.editType == 'edit') { this.buildePriceStockList(false) }
+
       if (!this.checkSpecifyValue()) { return false }
       if (!this.filterSpecifyValuePrice()) { return false }
 
@@ -791,7 +793,8 @@ export default {
       const newPriceStockList = this.priceStockList
 
       if (!oldPriceStockList) { return false }
-      this.matchPriceStock(oldPriceStockList, newPriceStockList)
+      this.priceStockList = this.matchPriceStock(oldPriceStockList, newPriceStockList)
+
       this.priceStockBatchBar()
       this.countAllStock()
       this.priceStockTableBatch.price = ''
@@ -829,7 +832,7 @@ export default {
         })
       })
 
-      this.priceStockList = this.rewriteFormatSpecify(newListSpecify, specifyLength)
+      return this.rewriteFormatSpecify(newListSpecify, specifyLength)
     },
     rewriteFormatSpecify(list, specifyLength) { // 对新的list写回原来的格式
       if (!list) { return }
@@ -984,7 +987,6 @@ export default {
             this.$message.warning(response.data.msg)
             return
           }
-
           this.ruleForm.g_alias = value
           this.$message.success(response.data.msg)
         })

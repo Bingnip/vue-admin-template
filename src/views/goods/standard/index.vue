@@ -105,7 +105,9 @@
             </template>
           </el-table-column>
           <el-table-column label="自然人气值" width="70" align="center">
-            <template />
+            <template slot-scope="scope">
+              {{ scope.row.natural_rank }}
+            </template>
           </el-table-column>
           <el-table-column label="修改时间" width="100" align="center">
             <template slot-scope="{row}">
