@@ -441,6 +441,8 @@ export default {
         this.loading.close()
         this.priceStockBatchBar()
         this.countAllStock()
+      }).catch(() => {
+        this.loading.close()
       })
     },
     editTypeCheck() { // 判断是编辑还是新增
@@ -453,6 +455,8 @@ export default {
       }
     },
     filterSubmitData() {
+      console.log(JSON.stringify(this.ruleForm.g_add_time))
+
       if (this.ruleForm.g_sku.trim() == '') {
         this.$message.warning('请填写SKU')
         return false
@@ -462,7 +466,7 @@ export default {
       } else if (this.ruleForm.g_alias.trim() == '') {
         this.$message.warning('请填写URL KEY')
         return false
-      } else if (this.ruleForm.g_add_time == '') {
+      } else if (!this.ruleForm.g_add_time) {
         this.$message.warning('请填写添加时间')
         return false
       } else if (this.ruleForm.imgList.length < 3) {
