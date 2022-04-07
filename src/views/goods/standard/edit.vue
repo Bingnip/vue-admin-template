@@ -626,8 +626,8 @@ export default {
     prevent(e) {
       var keynum = window.event ? e.keyCode : e.which // 获取键盘码
 
-      if (keynum == 189 || keynum == 190 || keynum == 109 || keynum == 110) {
-        this.$message.warning('禁止输入小数以及负数')
+      if (keynum == 189 || keynum == 109) {
+        this.$message.warning('禁止输入负数')
         e.target.value = ''
       }
     },
